@@ -22,6 +22,8 @@ This is not the same as a guarantee of correctness — it means our specific che
 
 **1 finding**, ordered by how much they're worth your time:
 
+*Each finding below cites an exact file:line and the paper sentence it's checked against — verify before acting on any of them; see the human-review note in README.md.*
+
 ### 1. [MEDIUM] single_seed_reporting (confidence: 95%)
 
 > **Paper says:** we report the test accuracy on ten runs.
@@ -29,8 +31,6 @@ This is not the same as a guarantee of correctness — it means our specific che
 **Code:** `run_gmixup.sh:2`
 
 The shell script loops over only eight seed values, not ten as claimed.
-
-*Verify this yourself before acting on it — see the human-review note in README.md.*
 
 <sub>Scoring (for eval purposes, not shown to end users in a real deployment): 1 confirmed against known ground truth, 0 unconfirmed, 4 missed. F1 = 0.3333.</sub>
 
@@ -83,6 +83,8 @@ This is not the same as a guarantee of correctness — it means our specific che
 
 **1 finding**, ordered by how much they're worth your time:
 
+*Each finding below cites an exact file:line and the paper sentence it's checked against — verify before acting on any of them; see the human-review note in README.md.*
+
 ### 1. [MEDIUM] other (confidence: 95%)
 
 > **Paper says:** We randomly split the training dataset of CIFAR-10 without replacement into ten batches.
@@ -91,8 +93,6 @@ This is not the same as a guarantee of correctness — it means our specific che
 
 The input_dataset function creates a CIFAR10 train_dataset without any splitting into ten batches; it loads the full training set directly.
 
-*Verify this yourself before acting on it — see the human-review note in README.md.*
-
 <sub>Scoring (for eval purposes, not shown to end users in a real deployment): 0 confirmed against known ground truth, 1 unconfirmed, 0 missed. F1 = 0.0.</sub>
 
 ---
@@ -100,9 +100,11 @@ The input_dataset function creates a CIFAR10 train_dataset without any splitting
 ## [SYNTHETIC FIXTURE] Not a real paper
 
 **Paper:** synthetic fixture, not a real paper  
-**Repo:** local:data/synthetic/synthetic_multi_defect (constructed by RepoAudit, no external URL) @ `n/a (not a`
+**Repo:** local:data/synthetic/synthetic_multi_defect (constructed by RepoAudit, no external URL)
 
 **3 findings**, ordered by how much they're worth your time:
+
+*Each finding below cites an exact file:line and the paper sentence it's checked against — verify before acting on any of them; see the human-review note in README.md.*
 
 ### 1. [HIGH] metric_misimplementation (confidence: 100%)
 
@@ -112,8 +114,6 @@ The input_dataset function creates a CIFAR10 train_dataset without any splitting
 
 The evaluate() function calls f1_score(y, preds) without specifying the 'average' argument, so sklearn defaults to binary averaging, contradicting the claimed macro-averaged F1.
 
-*Verify this yourself before acting on it — see the human-review note in README.md.*
-
 ### 2. [HIGH] test_set_contamination (confidence: 100%)
 
 > **Paper says:** All hyperparameter selection is performed on a validation split; the test set is touched exactly once, for final reporting.
@@ -122,8 +122,6 @@ The evaluate() function calls f1_score(y, preds) without specifying the 'average
 
 train_with_early_stopping selects the best max_iter based on accuracy on X_test/y_test, i.e., the test set, violating the claim of using a validation split only.
 
-*Verify this yourself before acting on it — see the human-review note in README.md.*
-
 ### 3. [HIGH] eval_on_train (confidence: 100%)
 
 > **Paper says:** computed on the held-out test set only
@@ -131,8 +129,6 @@ train_with_early_stopping selects the best max_iter based on accuracy on X_test/
 **Code:** `train.py:73-78`
 
 The final "test" evaluation mistakenly passes X_train and y_train to evaluate(), so reported test metrics are actually computed on the training set.
-
-*Verify this yourself before acting on it — see the human-review note in README.md.*
 
 <sub>Scoring (for eval purposes, not shown to end users in a real deployment): 3 confirmed against known ground truth, 0 unconfirmed, 0 missed. F1 = 1.0.</sub>
 
@@ -161,6 +157,8 @@ This is not the same as a guarantee of correctness — it means our specific che
 
 **2 findings**, ordered by how much they're worth your time:
 
+*Each finding below cites an exact file:line and the paper sentence it's checked against — verify before acting on any of them; see the human-review note in README.md.*
+
 ### 1. [HIGH] single_seed_reporting (confidence: 99%)
 
 > **Paper says:** Experiments are run with three seeds on a single A100 GPU and the averaged test accuracy is reported.
@@ -169,8 +167,6 @@ This is not the same as a guarantee of correctness — it means our specific che
 
 The code defines a single '--seed' argument with default 0 and the README shows example commands using only one seed; there is no loop or script to run three seeds and average results.
 
-*Verify this yourself before acting on it — see the human-review note in README.md.*
-
 ### 2. [LOW] other (confidence: 95%)
 
 > **Paper says:** We follow Chen et al. (2023) to split the datasets.
@@ -178,8 +174,6 @@ The code defines a single '--seed' argument with default 0 and the README shows 
 **Code:** `data/prepare_data.py:17-24`
 
 Dataset splitting is performed using the standard torchvision train/test splits (train=True/False) rather than any procedure from Chen et al. (2023).
-
-*Verify this yourself before acting on it — see the human-review note in README.md.*
 
 <sub>Scoring (for eval purposes, not shown to end users in a real deployment): 1 confirmed against known ground truth, 1 unconfirmed, 0 missed. F1 = 0.6667.</sub>
 

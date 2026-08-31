@@ -12,6 +12,8 @@ Papers audited: 9  ·  Micro-avg F1: 0.182  ·  Precision: 29%  ·  Recall: 13%
 
 **2 findings**, ordered by how much they're worth your time:
 
+*Each finding below cites an exact file:line and the paper sentence it's checked against — verify before acting on any of them; see the human-review note in README.md.*
+
 ### 1. [HIGH] metric_misimplementation (confidence: ?)
 
 > **Paper says:** Section 3.1: Definitions of Average number of Active Patches (AAP), Average Jaccard Similarity of Active Patches with Teacher (AJS), and Prototype Matching Score (PMS)
@@ -20,8 +22,6 @@ Papers audited: 9  ·  Micro-avg F1: 0.182  ·  Precision: 29%  ·  Recall: 13%
 
 The paper defines AAP and AJS in terms of active patches (local representations), but the code computes them in terms of active prototypes (counting prototypes with at least one active patch per image and Jaccard similarity of active prototype sets), leading to a different metric.
 
-*Verify this yourself before acting on it — see the human-review note in README.md.*
-
 ### 2. [MEDIUM] single_seed_reporting (confidence: ?)
 
 > **Paper says:** Experimental results in Tables 2-5 report single numbers without mention of multiple runs or variance.
@@ -29,8 +29,6 @@ The paper defines AAP and AJS in terms of active patches (local representations)
 **Code:** `main.py: lines 20-25 (setting seed from config) and lack of multiple seeds in paper.`
 
 The paper reports results from a single random seed without mentioning multiple runs or variance, making it impossible to assess the robustness of the results.
-
-*Verify this yourself before acting on it — see the human-review note in README.md.*
 
 <sub>Scoring (for eval purposes, not shown to end users in a real deployment): 0 confirmed against known ground truth, 2 unconfirmed, 0 missed. F1 = 0.0.</sub>
 
@@ -43,6 +41,8 @@ The paper reports results from a single random seed without mentioning multiple 
 
 **2 findings**, ordered by how much they're worth your time:
 
+*Each finding below cites an exact file:line and the paper sentence it's checked against — verify before acting on any of them; see the human-review note in README.md.*
+
 ### 1. [HIGH] other (confidence: ?)
 
 > **Paper says:** Appendix F.1: Note that best test epoch is selected on a validation set, and we report the test accuracy on ten runs.
@@ -51,8 +51,6 @@ The paper reports results from a single random seed without mentioning multiple 
 
 The paper states that the best epoch is selected using the validation set, but the provided code does not evaluate on the validation set during training to pick the best model. Instead, it trains for a fixed number of epochs and evaluates on the test set at the last epoch, which may lead to overfitting and inflated test performance.
 
-*Verify this yourself before acting on it — see the human-review note in README.md.*
-
 ### 2. [MEDIUM] other (confidence: ?)
 
 > **Paper says:** Appendix F.1: ... we report the test accuracy on ten runs.
@@ -60,8 +58,6 @@ The paper states that the best epoch is selected using the validation set, but t
 **Code:** `src/gmixup.py: torch.manual_seed(seed); random.seed(seed)`
 
 The paper reports results averaged over ten runs, but the code only executes a single run per invocation. To reproduce the paper's results, the user must run the code ten times with different seeds and average the results.
-
-*Verify this yourself before acting on it — see the human-review note in README.md.*
 
 <sub>Scoring (for eval purposes, not shown to end users in a real deployment): 0 confirmed against known ground truth, 2 unconfirmed, 5 missed. F1 = 0.0.</sub>
 
@@ -74,6 +70,8 @@ The paper reports results averaged over ten runs, but the code only executes a s
 
 **1 finding**, ordered by how much they're worth your time:
 
+*Each finding below cites an exact file:line and the paper sentence it's checked against — verify before acting on any of them; see the human-review note in README.md.*
+
 ### 1. [HIGH] test_set_contamination (confidence: ?)
 
 > **Paper says:** Section 2: 'We randomly sampled a 5,000-example validation set from the training set and used the remaining 55,000 training examples as our training set for the rest of the paper (including Section 2).'
@@ -82,8 +80,6 @@ The paper reports results averaged over ten runs, but the code only executes a s
  datasets/dataset_mnist.py`
 
 The paper states that a validation set is used to determine the iteration of minimum validation loss for early stopping, but the code does not create or use a validation set. Instead, the code logs test set performance at regular intervals, which would be used to select the best iteration, leading to test set contamination.
-
-*Verify this yourself before acting on it — see the human-review note in README.md.*
 
 <sub>Scoring (for eval purposes, not shown to end users in a real deployment): 1 confirmed against known ground truth, 0 unconfirmed, 1 missed. F1 = 0.6667.</sub>
 
@@ -96,6 +92,8 @@ The paper states that a validation set is used to determine the iteration of min
 
 **1 finding**, ordered by how much they're worth your time:
 
+*Each finding below cites an exact file:line and the paper sentence it's checked against — verify before acting on any of them; see the human-review note in README.md.*
+
 ### 1. [MEDIUM] single_seed_reporting (confidence: ?)
 
 > **Paper says:** The paper does not mention the random seed used for experiments or multiple runs to account for variance.
@@ -103,8 +101,6 @@ The paper states that a validation set is used to determine the iteration of min
 **Code:** `arg_parser.py`
 
 The paper reports results from a single run without specifying the seed or conducting multiple runs, making it difficult to assess the variability of the results.
-
-*Verify this yourself before acting on it — see the human-review note in README.md.*
 
 <sub>Scoring (for eval purposes, not shown to end users in a real deployment): 0 confirmed against known ground truth, 1 unconfirmed, 1 missed. F1 = 0.0.</sub>
 
@@ -139,7 +135,7 @@ This is not the same as a guarantee of correctness — it means our specific che
 ## [SYNTHETIC FIXTURE] Not a real paper
 
 **Paper:** synthetic fixture, not a real paper  
-**Repo:** local:data/synthetic/synthetic_multi_defect (constructed by RepoAudit, no external URL) @ `n/a (not a`
+**Repo:** local:data/synthetic/synthetic_multi_defect (constructed by RepoAudit, no external URL)
 
 > ⚠️ **This run hit an error and may be incomplete:** Could not parse JSON from model response (first 300 chars): '[\n  {\n    "failure_mode": "test_set_contamination",\n    "severity": "high",\n    "paper_evidence": "All hyperparameter selection is performed on a validation split; the test set is touched exactly once, for final reporting.",\n    "code
 
@@ -157,6 +153,8 @@ This is not the same as a guarantee of correctness — it means our specific che
 
 **1 finding**, ordered by how much they're worth your time:
 
+*Each finding below cites an exact file:line and the paper sentence it's checked against — verify before acting on any of them; see the human-review note in README.md.*
+
 ### 1. [MEDIUM] single_seed_reporting (confidence: ?)
 
 > **Paper says:** Section 5 Experiments: 'All experiments are repeated 20 times on NVIDIA GTX3090 GPUs with PyTorch.' (Table 1) and 'All experiments are repeated ten times on NVIDIA GTX3090 GPUs with PyTorch.' (Tables 2 and 3).
@@ -164,8 +162,6 @@ This is not the same as a guarantee of correctness — it means our specific che
 **Code:** `run_fashion.py: no loop over seeds; only a single call to optimize() after parsing arguments.`
 
 The paper claims results are averaged over multiple runs (10-20 times), but the provided code executes a single optimization run without averaging over multiple seeds, potentially hiding variability and undermining reproducibility.
-
-*Verify this yourself before acting on it — see the human-review note in README.md.*
 
 <sub>Scoring (for eval purposes, not shown to end users in a real deployment): 1 confirmed against known ground truth, 0 unconfirmed, 0 missed. F1 = 1.0.</sub>
 

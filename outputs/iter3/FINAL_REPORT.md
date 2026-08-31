@@ -26,6 +26,8 @@ This is not the same as a guarantee of correctness — it means our specific che
 
 **4 findings**, ordered by how much they're worth your time:
 
+*Each finding below cites an exact file:line and the paper sentence it's checked against — verify before acting on any of them; see the human-review note in README.md.*
+
 ### 1. [HIGH] hyperparam_drift (confidence: 100%)
 
 > **Paper says:** The batch size is set to size is set to 128.
@@ -33,8 +35,6 @@ This is not the same as a guarantee of correctness — it means our specific che
 **Code:** `src/gmixup.py:128`
 
 The evidence shows --batch_size default=32, which does not match the claimed value of 128.
-
-*Verify this yourself before acting on it — see the human-review note in README.md.*
 
 ### 2. [HIGH] hyperparam_drift (confidence: 100%)
 
@@ -44,8 +44,6 @@ The evidence shows --batch_size default=32, which does not match the claimed val
 
 The evidence shows the default lambda range is "[0.005, 0.01]", which does not match the claimed range [0.1, 0.2].
 
-*Verify this yourself before acting on it — see the human-review note in README.md.*
-
 ### 3. [HIGH] data_leakage_global_preprocessing (confidence: 90%)
 
 > **Paper says:** We split the dataset into train/val/test data by 7 : 1 : 2.
@@ -54,8 +52,6 @@ The evidence shows the default lambda range is "[0.005, 0.01]", which does not m
 
 The preprocessing call deg.mean() at line 49 computes statistics on deg (derived from the full dataset) before the train/val/test split at line 250 (train_dataset = dataset[:train_nums]), causing global preprocessing leakage.
 
-*Verify this yourself before acting on it — see the human-review note in README.md.*
-
 ### 4. [LOW] single_seed_reporting (confidence: 95%)
 
 > **Paper says:** we report the test accuracy on ten runs.
@@ -63,8 +59,6 @@ The preprocessing call deg.mean() at line 49 computes statistics on deg (derived
 **Code:** `run_gmixup.sh:2`
 
 The script loops over 8 seed values (1314,11314,21314,31314,41314,51314,61314,71314), which is fewer than the ten runs claimed.
-
-*Verify this yourself before acting on it — see the human-review note in README.md.*
 
 <sub>Scoring (for eval purposes, not shown to end users in a real deployment): 4 confirmed against known ground truth, 0 unconfirmed, 1 missed. F1 = 0.8889.</sub>
 
@@ -91,6 +85,8 @@ This is not the same as a guarantee of correctness — it means our specific che
 
 **4 findings**, ordered by how much they're worth your time:
 
+*Each finding below cites an exact file:line and the paper sentence it's checked against — verify before acting on any of them; see the human-review note in README.md.*
+
 ### 1. [HIGH] hyperparam_drift (confidence: 100%)
 
 > **Paper says:** we set B = 64 before calculating the covariance matrix.
@@ -98,8 +94,6 @@ This is not the same as a guarantee of correctness — it means our specific che
 **Code:** `main_imagenet.py:51`
 
 The evidence shows the batch-size flag (-b/--batch-size) defaults to 256, not the claimed value of 64.
-
-*Verify this yourself before acting on it — see the human-review note in README.md.*
 
 ### 2. [HIGH] hyperparam_drift (confidence: 100%)
 
@@ -109,8 +103,6 @@ The evidence shows the batch-size flag (-b/--batch-size) defaults to 256, not th
 
 The evidence shows the default batch size is 256 (flag -b/--batch-size default=256), which contradicts the claimed batch size of 128.
 
-*Verify this yourself before acting on it — see the human-review note in README.md.*
-
 ### 3. [HIGH] hyperparam_drift (confidence: 100%)
 
 > **Paper says:** we can use the optimal learning rate 1.0 and get high accuracy as well.
@@ -119,8 +111,6 @@ The evidence shows the default batch size is 256 (flag -b/--batch-size default=2
 
 The repository's default learning rate is 0.1 (flag --lr/--learning-rate default=0.1), which does not match the claimed value of 1.0.
 
-*Verify this yourself before acting on it — see the human-review note in README.md.*
-
 ### 4. [MEDIUM] hyperparam_drift (confidence: 100%)
 
 > **Paper says:** the final accuracy actually improves with increased weight decay (.0005 to .005).
@@ -128,8 +118,6 @@ The repository's default learning rate is 0.1 (flag --lr/--learning-rate default
 **Code:** `main_imagenet.py:67`
 
 Evidence E12 shows the default weight decay is 1e-4 (0.0001), which is outside the claimed range of .0005 to .005.
-
-*Verify this yourself before acting on it — see the human-review note in README.md.*
 
 <sub>Scoring (for eval purposes, not shown to end users in a real deployment): 1 confirmed against known ground truth, 3 unconfirmed, 0 missed. F1 = 0.4.</sub>
 
@@ -156,6 +144,8 @@ This is not the same as a guarantee of correctness — it means our specific che
 
 **1 finding**, ordered by how much they're worth your time:
 
+*Each finding below cites an exact file:line and the paper sentence it's checked against — verify before acting on any of them; see the human-review note in README.md.*
+
 ### 1. [HIGH] single_seed_reporting (confidence: 95%)
 
 > **Paper says:** mean ± standard deviation of 5 runs
@@ -164,8 +154,6 @@ This is not the same as a guarantee of correctness — it means our specific che
 
 The code shows a single seed argument with default value 0 and no loop over multiple seeds, indicating only one run was performed, contradicting the claim of averaging over 5 runs.
 
-*Verify this yourself before acting on it — see the human-review note in README.md.*
-
 <sub>Scoring (for eval purposes, not shown to end users in a real deployment): 0 confirmed against known ground truth, 1 unconfirmed, 0 missed. F1 = 0.0.</sub>
 
 ---
@@ -173,9 +161,11 @@ The code shows a single seed argument with default value 0 and no loop over mult
 ## [SYNTHETIC FIXTURE] Not a real paper
 
 **Paper:** synthetic fixture, not a real paper  
-**Repo:** local:data/synthetic/synthetic_multi_defect (constructed by RepoAudit, no external URL) @ `n/a (not a`
+**Repo:** local:data/synthetic/synthetic_multi_defect (constructed by RepoAudit, no external URL)
 
 **3 findings**, ordered by how much they're worth your time:
+
+*Each finding below cites an exact file:line and the paper sentence it's checked against — verify before acting on any of them; see the human-review note in README.md.*
 
 ### 1. [HIGH] metric_misimplementation (confidence: 95%)
 
@@ -185,8 +175,6 @@ The code shows a single seed argument with default value 0 and no loop over mult
 
 The evidence shows a call to f1_score(y, preds) without an average parameter, which defaults to binary averaging in sklearn, not macro-averaged as claimed.
 
-*Verify this yourself before acting on it — see the human-review note in README.md.*
-
 ### 2. [HIGH] test_set_contamination (confidence: 95%)
 
 > **Paper says:** All hyperparameter selection is performed on a validation split; the test set is touched exactly once, for final reporting.
@@ -195,8 +183,6 @@ The evidence shows a call to f1_score(y, preds) without an average parameter, wh
 
 Evidence E6 shows test accuracy being computed on X_test/y_test inside the training loop, indicating the test set is used for model selection rather than only once for final reporting.
 
-*Verify this yourself before acting on it — see the human-review note in README.md.*
-
 ### 3. [HIGH] eval_on_train (confidence: 95%)
 
 > **Paper says:** computed on the held-out test set only, after training is complete.
@@ -204,8 +190,6 @@ Evidence E6 shows test accuracy being computed on X_test/y_test inside the train
 **Code:** `train.py:77`
 
 The final evaluate call in train.py (line 77, evidence E2) is invoked with X_train and y_train, indicating evaluation on training data rather than the held-out test set.
-
-*Verify this yourself before acting on it — see the human-review note in README.md.*
 
 <sub>Scoring (for eval purposes, not shown to end users in a real deployment): 3 confirmed against known ground truth, 0 unconfirmed, 0 missed. F1 = 1.0.</sub>
 
@@ -230,6 +214,8 @@ This is not the same as a guarantee of correctness — it means our specific che
 
 **1 finding**, ordered by how much they're worth your time:
 
+*Each finding below cites an exact file:line and the paper sentence it's checked against — verify before acting on any of them; see the human-review note in README.md.*
+
 ### 1. [HIGH] single_seed_reporting (confidence: 95%)
 
 > **Paper says:** Experiments are run with three seeds on a single A100 GPU
@@ -237,8 +223,6 @@ This is not the same as a guarantee of correctness — it means our specific che
 **Code:** `readme.md:53`
 
 The evidence shows a hardcoded seed value of 0 with no loop over multiple seeds, indicating only a single seed was used.
-
-*Verify this yourself before acting on it — see the human-review note in README.md.*
 
 <sub>Scoring (for eval purposes, not shown to end users in a real deployment): 1 confirmed against known ground truth, 0 unconfirmed, 0 missed. F1 = 1.0.</sub>
 

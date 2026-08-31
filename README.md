@@ -6,11 +6,30 @@ Built for the micro1 Agentic Workflows Hackathon (2026).
 
 ---
 
+### What you actually get — one real finding, unedited
+
+```
+### 3. [HIGH] data_leakage_global_preprocessing (confidence: 90%)
+
+> Paper says: We split the dataset into train/val/test data by 7 : 1 : 2.
+
+Code: src/gmixup.py:49
+
+The preprocessing call deg.mean() at line 49 computes statistics on deg
+(derived from the full dataset) before the train/val/test split at line
+250 (train_dataset = dataset[:train_nums]), causing global preprocessing
+leakage.
+```
+
+That's an unedited excerpt from `outputs/final/FINAL_REPORT.md` — a real bug in G-Mixup (ICML 2022)'s official code, found automatically, cited to an exact line, checkable in under a minute. The full report covers all 9 eval-set papers; run `python scripts/generate_report.py final` to regenerate it yourself.
+
+---
+
 ## The user and their bottleneck
 
 **Who has this problem:** journal editors, program-committee chairs, and ML team leads who have to decide whether a paper's reported results can be trusted — before publishing it, citing it, or building a product on top of it.
 
-**The bottleneck:** today this is done by hand, if at all. OpenAI's PaperBench (Starace et al., 2025) measured this directly: on a 3-paper subset, 8 ML PhD participants (best of 3 attempts) hit only **41.4% replication after 48 hours of effort each** — and that's the *harder* task, full from-scratch replication, not the narrower question we're asking. [Independently verified against the paper's own text, not just cited secondhand.] The practical question — *"does this repo exhibit any of the specific bugs that make ML results unreliable?"* — has no tooling at all. A reviewer with 15 minutes has no way to check it, so it mostly doesn't get checked.
+**The bottleneck:** today this is done by hand, if at all. OpenAI's PaperBench (Starace et al., 2025) measured this directly: on a 3-paper subset, 8 ML PhD participants (best of 3 attempts) hit only **41.4% replication after 48 hours of effort each** — a number we checked directly against the paper's own text rather than trusting a secondhand citation — and that's the *harder* task, full from-scratch replication, not the narrower question we're asking. The practical question — *"does this repo exhibit any of the specific bugs that make ML results unreliable?"* — has no tooling at all. A reviewer with 15 minutes has no way to check it, so it mostly doesn't get checked.
 
 **Why solving it is valuable:** the bugs are real and they're sitting in plain sight. While building this project's eval set we hand-verified **12 findings across 6 well-known public papers**, including official ICML 2024 repos:
 
@@ -49,7 +68,7 @@ Accordingly:
 - The intended use is *triage* — pointing a reviewer at the 3 things worth their 15 minutes — **not** adjudication.
 - This project reads public repositories read-only. It never modifies, contacts, or publishes anything on its own.
 
-A consensus check plus an explicit human-approval gate for high-severity findings was the planned Phase 5 (`instructions.md` §6) and **is not built** — the deadline arrived first. Until it exists, the human review step is procedural, described here, rather than enforced in code. We consider this the most significant open gap in the system; see `MICRO1_JUDGE_AUDIT.txt`.
+A consensus check plus an explicit human-approval gate for high-severity findings was the planned next iteration (Phase 5) and **is not built** — the deadline arrived first. Until it exists, the human review step is procedural, described here, rather than enforced in code. We consider this the most significant open gap in the system.
 
 ---
 
@@ -57,7 +76,7 @@ A consensus check plus an explicit human-approval gate for high-severity finding
 
 **Primary metric: F1** against `data/ground_truth.json` — it's the one number the user actually needs, since a journal editor cares equally about missed real bugs (recall) and wasted-time false alarms (precision), and F1 is the standard way to force both to matter at once. Precision, recall, FPR-on-clean, and the per-failure-mode breakdown are reported alongside it as supporting diagnostics — they explain *why* F1 moved, not what "winning" means. Full detail with per-paper tables in [`changelog.md`](changelog.md) and `phases/phase_*.md`. All figures below are scored against **identical current ground truth** (`src.eval.rescore_phase` replays saved predictions when ground truth changes, so comparisons stay fair).
 
-**Why we stopped after Phase 4 (iteration 3) rather than building Phase 5:** `instructions.md` §6 planned a final iteration — consensus checking + a human-approval gate. After weighing it directly (see the "solid core" vs. "full scope" discussion this project went through), we chose to close out the submission instead: record the video, verify Phase 4's results, and polish what's built, rather than add a fifth iteration on the last day. Phase 5's human-approval gate is the one piece of unbuilt work we consider a real, still-open gap — see the disclaimer above.
+**Why we stopped after Phase 4 (iteration 3) rather than building a Phase 5:** the original plan included one more iteration — consensus checking across checkers, plus a human-approval gate. After weighing it directly against finishing well, we chose to close out the submission instead: record the video, verify Phase 4's results, and polish what's built, rather than add a fifth iteration on the last day. That human-approval gate is the one piece of unbuilt work we consider a real, still-open gap — see the disclaimer above.
 
 | Stage | What we tried and why | Evidence | Decision / learning |
 |---|---|---|---|
@@ -134,7 +153,6 @@ src/eval.py       scoring harness + rescore_phase for fair cross-phase compariso
 data/ground_truth.json    15 hand-verified findings across 9 papers
 phases/           per-phase writeups with failure analysis
 outputs/trajectories/     agent trajectories (instructions → tool calls → result)
-MICRO1_JUDGE_AUDIT.txt    our own adversarial self-audit against the brief
 ```
 
 ## What existed before vs. what we built

@@ -24,6 +24,8 @@ This is not the same as a guarantee of correctness — it means our specific che
 
 **5 findings**, ordered by how much they're worth your time:
 
+*Each finding below cites an exact file:line and the paper sentence it's checked against — verify before acting on any of them; see the human-review note in README.md.*
+
 ### 1. [HIGH] hyperparam_drift (confidence: 100%)
 
 > **Paper says:** The batch size is set to 128.
@@ -31,8 +33,6 @@ This is not the same as a guarantee of correctness — it means our specific che
 **Code:** `src/gmixup.py`
 
 The code defines the batch_size argument with a default value of 32, not 128.
-
-*Verify this yourself before acting on it — see the human-review note in README.md.*
 
 ### 2. [HIGH] hyperparam_drift (confidence: 100%)
 
@@ -42,8 +42,6 @@ The code defines the batch_size argument with a default value of 32, not 128.
 
 The lam_range argument defaults to "[0.005, 0.01]", which does not match the claimed range of [0.1, 0.2].
 
-*Verify this yourself before acting on it — see the human-review note in README.md.*
-
 ### 3. [HIGH] hyperparam_drift (confidence: 100%)
 
 > **Paper says:** we generate 20% more graph for training graph.
@@ -51,8 +49,6 @@ The lam_range argument defaults to "[0.005, 0.01]", which does not match the cla
 **Code:** `src/gmixup.py`
 
 The aug_ratio argument defaults to 0.15 (15%), indicating 15% more graphs rather than the claimed 20%.
-
-*Verify this yourself before acting on it — see the human-review note in README.md.*
 
 ### 4. [HIGH] metric_misimplementation (confidence: 100%)
 
@@ -62,8 +58,6 @@ The aug_ratio argument defaults to 0.15 (15%), indicating 15% more graphs rather
 
 The test function computes classification accuracy; no AUROC calculation is present in the code.
 
-*Verify this yourself before acting on it — see the human-review note in README.md.*
-
 ### 5. [MEDIUM] single_seed_reporting (confidence: 100%)
 
 > **Paper says:** we report the test accuracy on ten runs.
@@ -71,8 +65,6 @@ The test function computes classification accuracy; no AUROC calculation is pres
 **Code:** `src/gmixup.py`
 
 The code sets a single seed and runs training once; there is no loop or aggregation over ten runs as claimed.
-
-*Verify this yourself before acting on it — see the human-review note in README.md.*
 
 <sub>Scoring (for eval purposes, not shown to end users in a real deployment): 3 confirmed against known ground truth, 2 unconfirmed, 2 missed. F1 = 0.6.</sub>
 
@@ -87,6 +79,8 @@ The code sets a single seed and runs training once; there is no loop or aggregat
 
 **1 finding**, ordered by how much they're worth your time:
 
+*Each finding below cites an exact file:line and the paper sentence it's checked against — verify before acting on any of them; see the human-review note in README.md.*
+
 ### 1. [HIGH] hyperparam_drift (confidence: 100%)
 
 > **Paper says:** We use Adam at a learning rate of 0.0012.
@@ -94,8 +88,6 @@ The code sets a single seed and runs training once; there is no loop or aggregat
 **Code:** `mnist_fc/constants.py:33`
 
 The paper claims the use of Adam optimizer with learning rate 0.0012, but the code uses GradientDescentOptimizer with learning rate 0.1.
-
-*Verify this yourself before acting on it — see the human-review note in README.md.*
 
 <sub>Scoring (for eval purposes, not shown to end users in a real deployment): 1 confirmed against known ground truth, 0 unconfirmed, 1 missed. F1 = 0.6667.</sub>
 
@@ -120,6 +112,8 @@ This is not the same as a guarantee of correctness — it means our specific che
 
 **2 findings**, ordered by how much they're worth your time:
 
+*Each finding below cites an exact file:line and the paper sentence it's checked against — verify before acting on any of them; see the human-review note in README.md.*
+
 ### 1. [HIGH] hyperparam_drift (confidence: 100%)
 
 > **Paper says:** weight decay of 1e-6
@@ -128,8 +122,6 @@ This is not the same as a guarantee of correctness — it means our specific che
 
 The code sets the default weight decay to 0.05 (5e-2), which contradicts the claimed value of 1e-6.
 
-*Verify this yourself before acting on it — see the human-review note in README.md.*
-
 ### 2. [MEDIUM] single_seed_reporting (confidence: 100%)
 
 > **Paper says:** averaged across three random seeds
@@ -137,8 +129,6 @@ The code sets the default weight decay to 0.05 (5e-2), which contradicts the cla
 **Code:** `main.py: parser.add_argument('--seed', default=0, type=int)`
 
 The code only accepts a single seed via the --seed argument and shows no mechanism (e.g., loop over seeds, wrapper script, or aggregation step) to run and average results across multiple seeds.
-
-*Verify this yourself before acting on it — see the human-review note in README.md.*
 
 <sub>Scoring (for eval purposes, not shown to end users in a real deployment): 2 confirmed against known ground truth, 0 unconfirmed, 0 missed. F1 = 1.0.</sub>
 
@@ -151,6 +141,8 @@ The code only accepts a single seed via the --seed argument and shows no mechani
 
 **1 finding**, ordered by how much they're worth your time:
 
+*Each finding below cites an exact file:line and the paper sentence it's checked against — verify before acting on any of them; see the human-review note in README.md.*
+
 ### 1. [MEDIUM] other (confidence: 100%)
 
 > **Paper says:** We randomly split the training dataset of CIFAR-10 without replacement into ten batches.
@@ -159,8 +151,6 @@ The code only accepts a single seed via the --seed argument and shows no mechani
 
 The code loads the CIFAR-10 training data from 5 predefined batches (data_batch_1 to data_batch_5) and concatenates them, without any random split into ten batches as claimed.
 
-*Verify this yourself before acting on it — see the human-review note in README.md.*
-
 <sub>Scoring (for eval purposes, not shown to end users in a real deployment): 0 confirmed against known ground truth, 1 unconfirmed, 0 missed. F1 = 0.0.</sub>
 
 ---
@@ -168,9 +158,11 @@ The code loads the CIFAR-10 training data from 5 predefined batches (data_batch_
 ## [SYNTHETIC FIXTURE] Not a real paper
 
 **Paper:** synthetic fixture, not a real paper  
-**Repo:** local:data/synthetic/synthetic_multi_defect (constructed by RepoAudit, no external URL) @ `n/a (not a`
+**Repo:** local:data/synthetic/synthetic_multi_defect (constructed by RepoAudit, no external URL)
 
 **3 findings**, ordered by how much they're worth your time:
+
+*Each finding below cites an exact file:line and the paper sentence it's checked against — verify before acting on any of them; see the human-review note in README.md.*
 
 ### 1. [HIGH] metric_misimplementation (confidence: 100%)
 
@@ -180,8 +172,6 @@ The code loads the CIFAR-10 training data from 5 predefined batches (data_batch_
 
 The code calls f1_score(y, preds) without specifying the average parameter, which defaults to 'binary' instead of macro-averaged as claimed.
 
-*Verify this yourself before acting on it — see the human-review note in README.md.*
-
 ### 2. [HIGH] test_set_contamination (confidence: 100%)
 
 > **Paper says:** All hyperparameter selection is performed on a validation split; the test set is touched exactly once, for final reporting.
@@ -190,8 +180,6 @@ The code calls f1_score(y, preds) without specifying the average parameter, whic
 
 The test set is used to select the best max_iter hyperparameter inside the training loop (line 52), meaning the test set is touched multiple times for hyperparameter selection, not just once for final reporting.
 
-*Verify this yourself before acting on it — see the human-review note in README.md.*
-
 ### 3. [HIGH] eval_on_train (confidence: 100%)
 
 > **Paper says:** computed on the held-out test set only, after training is complete.
@@ -199,8 +187,6 @@ The test set is used to select the best max_iter hyperparameter inside the train
 **Code:** `train.py:78`
 
 The code evaluates the model on the training set (X_train, y_train) but labels it as test set evaluation, so the reported test numbers are actually from the training set.
-
-*Verify this yourself before acting on it — see the human-review note in README.md.*
 
 <sub>Scoring (for eval purposes, not shown to end users in a real deployment): 3 confirmed against known ground truth, 0 unconfirmed, 0 missed. F1 = 1.0.</sub>
 

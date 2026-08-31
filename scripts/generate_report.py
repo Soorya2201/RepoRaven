@@ -34,6 +34,18 @@ def _finding_sort_key(f: dict) -> tuple:
     return (SEVERITY_ORDER.get(f.get("severity", "low"), 2), -float(f.get("confidence", 0) or 0))
 
 
+def _format_repo_commit(gt_entry: dict) -> str:
+    repo_url = gt_entry.get("repo_url", "n/a")
+    commit = str(gt_entry.get("repo_commit") or "").strip()
+    # Only render as a short `sha` if it actually looks like one -- the
+    # synthetic fixture's repo_commit is a descriptive sentence, and blindly
+    # slicing the first 10 characters of that mangles it mid-word.
+    is_sha = bool(commit) and len(commit) >= 6 and all(c in "0123456789abcdefABCDEF" for c in commit)
+    if is_sha:
+        return f"{repo_url} @ `{commit[:10]}`"
+    return repo_url
+
+
 def _render_paper(paper_id: str, gt_entry: dict, record: dict) -> str:
     findings = sorted(record.get("findings", []), key=_finding_sort_key)
     score = record.get("score", {})
@@ -44,7 +56,7 @@ def _render_paper(paper_id: str, gt_entry: dict, record: dict) -> str:
     arxiv = gt_entry.get("arxiv_id")
     lines.append(
         f"**Paper:** {'arXiv:' + arxiv if arxiv else 'synthetic fixture, not a real paper'}  \n"
-        f"**Repo:** {gt_entry.get('repo_url', 'n/a')} @ `{str(gt_entry.get('repo_commit', 'n/a'))[:10]}`"
+        f"**Repo:** {_format_repo_commit(gt_entry)}"
     )
     lines.append("")
 
@@ -68,6 +80,8 @@ def _render_paper(paper_id: str, gt_entry: dict, record: dict) -> str:
     else:
         lines.append(f"**{len(findings)} finding{'s' if len(findings) != 1 else ''}**, ordered by how much they're worth your time:")
         lines.append("")
+        lines.append("*Each finding below cites an exact file:line and the paper sentence it's checked against — verify before acting on any of them; see the human-review note in README.md.*")
+        lines.append("")
         for i, f in enumerate(findings, 1):
             sev = (f.get("severity") or "?").upper()
             conf = f.get("confidence")
@@ -79,8 +93,6 @@ def _render_paper(paper_id: str, gt_entry: dict, record: dict) -> str:
             lines.append(f"**Code:** `{f.get('code_evidence', '?')}`")
             lines.append("")
             lines.append(f"{f.get('explanation', '')}")
-            lines.append("")
-            lines.append("*Verify this yourself before acting on it — see the human-review note in README.md.*")
             lines.append("")
 
     n_expected = len(gt_entry.get("expected_findings", []))

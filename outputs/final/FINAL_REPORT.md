@@ -22,6 +22,8 @@ This is not the same as a guarantee of correctness — it means our specific che
 
 **5 findings**, ordered by how much they're worth your time:
 
+*Each finding below cites an exact file:line and the paper sentence it's checked against — verify before acting on any of them; see the human-review note in README.md.*
+
 ### 1. [HIGH] hyperparam_drift (confidence: 100%)
 
 > **Paper says:** The batch size is set to 128.
@@ -29,8 +31,6 @@ This is not the same as a guarantee of correctness — it means our specific che
 **Code:** `src/gmixup.py`
 
 The code defines the batch_size argument with a default value of 32, not 128.
-
-*Verify this yourself before acting on it — see the human-review note in README.md.*
 
 ### 2. [HIGH] metric_misimplementation (confidence: 100%)
 
@@ -40,8 +40,6 @@ The code defines the batch_size argument with a default value of 32, not 128.
 
 The test function computes classification accuracy; no AUROC calculation is present in the code.
 
-*Verify this yourself before acting on it — see the human-review note in README.md.*
-
 ### 3. [HIGH] data_leakage_global_preprocessing (confidence: 90%)
 
 > **Paper says:** We split the dataset into train/val/test data by 7 : 1 : 2.
@@ -49,8 +47,6 @@ The test function computes classification accuracy; no AUROC calculation is pres
 **Code:** `src/gmixup.py:49`
 
 The preprocessing call deg.mean() at line 49 computes statistics on deg (derived from the full dataset) before the train/val/test split at line 250 (train_dataset = dataset[:train_nums]), causing global preprocessing leakage.
-
-*Verify this yourself before acting on it — see the human-review note in README.md.*
 
 ### 4. [MEDIUM] single_seed_reporting (confidence: 100%)
 
@@ -60,8 +56,6 @@ The preprocessing call deg.mean() at line 49 computes statistics on deg (derived
 
 The code sets a single seed and runs training once; there is no loop or aggregation over ten runs as claimed.
 
-*Verify this yourself before acting on it — see the human-review note in README.md.*
-
 ### 5. [LOW] single_seed_reporting (confidence: 95%)
 
 > **Paper says:** we report the test accuracy on ten runs.
@@ -69,8 +63,6 @@ The code sets a single seed and runs training once; there is no loop or aggregat
 **Code:** `run_gmixup.sh:2`
 
 The script loops over 8 seed values (1314,11314,21314,31314,41314,51314,61314,71314), which is fewer than the ten runs claimed.
-
-*Verify this yourself before acting on it — see the human-review note in README.md.*
 
 <sub>Scoring (for eval purposes, not shown to end users in a real deployment): 3 confirmed against known ground truth, 2 unconfirmed, 2 missed. F1 = 0.6.</sub>
 
@@ -83,6 +75,8 @@ The script loops over 8 seed values (1314,11314,21314,31314,41314,51314,61314,71
 
 **1 finding**, ordered by how much they're worth your time:
 
+*Each finding below cites an exact file:line and the paper sentence it's checked against — verify before acting on any of them; see the human-review note in README.md.*
+
 ### 1. [HIGH] hyperparam_drift (confidence: 100%)
 
 > **Paper says:** We use Adam at a learning rate of 0.0012.
@@ -90,8 +84,6 @@ The script loops over 8 seed values (1314,11314,21314,31314,41314,51314,61314,71
 **Code:** `mnist_fc/constants.py:33`
 
 The paper claims the use of Adam optimizer with learning rate 0.0012, but the code uses GradientDescentOptimizer with learning rate 0.1.
-
-*Verify this yourself before acting on it — see the human-review note in README.md.*
 
 <sub>Scoring (for eval purposes, not shown to end users in a real deployment): 1 confirmed against known ground truth, 0 unconfirmed, 1 missed. F1 = 0.6667.</sub>
 
@@ -104,6 +96,8 @@ The paper claims the use of Adam optimizer with learning rate 0.0012, but the co
 
 **1 finding**, ordered by how much they're worth your time:
 
+*Each finding below cites an exact file:line and the paper sentence it's checked against — verify before acting on any of them; see the human-review note in README.md.*
+
 ### 1. [HIGH] hyperparam_drift (confidence: 100%)
 
 > **Paper says:** we set B = 64 before calculating the covariance matrix.
@@ -111,8 +105,6 @@ The paper claims the use of Adam optimizer with learning rate 0.0012, but the co
 **Code:** `main_imagenet.py:51`
 
 The evidence shows the batch-size flag (-b/--batch-size) defaults to 256, not the claimed value of 64.
-
-*Verify this yourself before acting on it — see the human-review note in README.md.*
 
 <sub>Scoring (for eval purposes, not shown to end users in a real deployment): 1 confirmed against known ground truth, 0 unconfirmed, 0 missed. F1 = 1.0.</sub>
 
@@ -125,6 +117,8 @@ The evidence shows the batch-size flag (-b/--batch-size) defaults to 256, not th
 
 **2 findings**, ordered by how much they're worth your time:
 
+*Each finding below cites an exact file:line and the paper sentence it's checked against — verify before acting on any of them; see the human-review note in README.md.*
+
 ### 1. [HIGH] hyperparam_drift (confidence: 100%)
 
 > **Paper says:** weight decay of 1e-6
@@ -133,8 +127,6 @@ The evidence shows the batch-size flag (-b/--batch-size) defaults to 256, not th
 
 The code sets the default weight decay to 0.05 (5e-2), which contradicts the claimed value of 1e-6.
 
-*Verify this yourself before acting on it — see the human-review note in README.md.*
-
 ### 2. [MEDIUM] single_seed_reporting (confidence: 100%)
 
 > **Paper says:** averaged across three random seeds
@@ -142,8 +134,6 @@ The code sets the default weight decay to 0.05 (5e-2), which contradicts the cla
 **Code:** `main.py: parser.add_argument('--seed', default=0, type=int)`
 
 The code only accepts a single seed via the --seed argument and shows no mechanism (e.g., loop over seeds, wrapper script, or aggregation step) to run and average results across multiple seeds.
-
-*Verify this yourself before acting on it — see the human-review note in README.md.*
 
 <sub>Scoring (for eval purposes, not shown to end users in a real deployment): 2 confirmed against known ground truth, 0 unconfirmed, 0 missed. F1 = 1.0.</sub>
 
@@ -156,6 +146,8 @@ The code only accepts a single seed via the --seed argument and shows no mechani
 
 **1 finding**, ordered by how much they're worth your time:
 
+*Each finding below cites an exact file:line and the paper sentence it's checked against — verify before acting on any of them; see the human-review note in README.md.*
+
 ### 1. [HIGH] single_seed_reporting (confidence: 95%)
 
 > **Paper says:** mean ± standard deviation of 5 runs
@@ -164,8 +156,6 @@ The code only accepts a single seed via the --seed argument and shows no mechani
 
 The code shows a single seed argument with default value 0 and no loop over multiple seeds, indicating only one run was performed, contradicting the claim of averaging over 5 runs.
 
-*Verify this yourself before acting on it — see the human-review note in README.md.*
-
 <sub>Scoring (for eval purposes, not shown to end users in a real deployment): 0 confirmed against known ground truth, 1 unconfirmed, 0 missed. F1 = 0.0.</sub>
 
 ---
@@ -173,9 +163,11 @@ The code shows a single seed argument with default value 0 and no loop over mult
 ## [SYNTHETIC FIXTURE] Not a real paper
 
 **Paper:** synthetic fixture, not a real paper  
-**Repo:** local:data/synthetic/synthetic_multi_defect (constructed by RepoAudit, no external URL) @ `n/a (not a`
+**Repo:** local:data/synthetic/synthetic_multi_defect (constructed by RepoAudit, no external URL)
 
 **3 findings**, ordered by how much they're worth your time:
+
+*Each finding below cites an exact file:line and the paper sentence it's checked against — verify before acting on any of them; see the human-review note in README.md.*
 
 ### 1. [HIGH] metric_misimplementation (confidence: 100%)
 
@@ -185,8 +177,6 @@ The code shows a single seed argument with default value 0 and no loop over mult
 
 The code calls f1_score(y, preds) without specifying the average parameter, which defaults to 'binary' instead of macro-averaged as claimed.
 
-*Verify this yourself before acting on it — see the human-review note in README.md.*
-
 ### 2. [HIGH] test_set_contamination (confidence: 100%)
 
 > **Paper says:** All hyperparameter selection is performed on a validation split; the test set is touched exactly once, for final reporting.
@@ -195,8 +185,6 @@ The code calls f1_score(y, preds) without specifying the average parameter, whic
 
 The test set is used to select the best max_iter hyperparameter inside the training loop (line 52), meaning the test set is touched multiple times for hyperparameter selection, not just once for final reporting.
 
-*Verify this yourself before acting on it — see the human-review note in README.md.*
-
 ### 3. [HIGH] eval_on_train (confidence: 100%)
 
 > **Paper says:** computed on the held-out test set only, after training is complete.
@@ -204,8 +192,6 @@ The test set is used to select the best max_iter hyperparameter inside the train
 **Code:** `train.py:78`
 
 The code evaluates the model on the training set (X_train, y_train) but labels it as test set evaluation, so the reported test numbers are actually from the training set.
-
-*Verify this yourself before acting on it — see the human-review note in README.md.*
 
 <sub>Scoring (for eval purposes, not shown to end users in a real deployment): 3 confirmed against known ground truth, 0 unconfirmed, 0 missed. F1 = 1.0.</sub>
 
@@ -230,6 +216,8 @@ This is not the same as a guarantee of correctness — it means our specific che
 
 **1 finding**, ordered by how much they're worth your time:
 
+*Each finding below cites an exact file:line and the paper sentence it's checked against — verify before acting on any of them; see the human-review note in README.md.*
+
 ### 1. [HIGH] single_seed_reporting (confidence: 95%)
 
 > **Paper says:** Experiments are run with three seeds on a single A100 GPU
@@ -237,8 +225,6 @@ This is not the same as a guarantee of correctness — it means our specific che
 **Code:** `readme.md:53`
 
 The evidence shows a hardcoded seed value of 0 with no loop over multiple seeds, indicating only a single seed was used.
-
-*Verify this yourself before acting on it — see the human-review note in README.md.*
 
 <sub>Scoring (for eval purposes, not shown to end users in a real deployment): 1 confirmed against known ground truth, 0 unconfirmed, 0 missed. F1 = 1.0.</sub>
 
