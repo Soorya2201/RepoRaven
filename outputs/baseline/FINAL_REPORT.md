@@ -1,8 +1,8 @@
 # RepoAudit Report — baseline
 
-**Findings are advisory triage, not adjudication.** This system is measurably imperfect (precision 40% on our own eval set — roughly 1 in 4-5 findings is wrong). Every finding below cites an exact file:line and the paper sentence it's checked against, so you can verify it in under a minute. **Do not forward any finding to an author, editor, or committee without checking the citation yourself first.** Full context: README.md.
+**Findings are advisory triage, not adjudication.** This system is measurably imperfect (precision 29% on our own eval set — roughly 1 in 4-5 findings is wrong). Every finding below cites an exact file:line and the paper sentence it's checked against, so you can verify it in under a minute. **Do not forward any finding to an author, editor, or committee without checking the citation yourself first.** Full context: README.md.
 
-Papers audited: 9  ·  Micro-avg F1: 0.320  ·  Precision: 40%  ·  Recall: 27%
+Papers audited: 9  ·  Micro-avg F1: 0.182  ·  Precision: 29%  ·  Recall: 13%
 
 ---
 ## Proto2Proto: Can you recognize the car, the way I do?
@@ -115,7 +115,7 @@ The paper reports results from a single run without specifying the seed or condu
 **Paper:** arXiv:2305.04769  
 **Repo:** https://github.com/NeurAI-Lab/BiRT @ `1340a97bff`
 
-> ⚠️ **This run hit an error and may be incomplete:** Could not parse JSON from model response (first 300 chars): '[\n  {\n    "failure_mode": "hyperparam_drift",\n    "severity": "medium",\n    "paper_evidence": "Section 3.1, Eq. 2 and Algorithm 1",\n    "code_evidence": "continual/engine.py",\n    "explanation": The paper describes a fixed gamma expo
+> ⚠️ **This run hit an error and may be incomplete:** LLM call failed: ReadTimeout: HTTPSConnectionPool(host='integrate.api.nvidia.com', port=443): Read timed out. (read timeout=240.0)
 
 **No findings.** Nothing in this repo contradicted a claim we could check against the paper.
 
@@ -129,20 +129,11 @@ This is not the same as a guarantee of correctness — it means our specific che
 **Paper:** arXiv:2110.12088  
 **Repo:** https://github.com/UCSC-REAL/cifar-10-100n @ `49df7d8a69`
 
-**1 finding**, ordered by how much they're worth your time:
+> ⚠️ **This run hit an error and may be incomplete:** Could not parse JSON from model response (first 300 chars): '[\n  {\n    "failure_mode": "other",\n    "severity": "medium",\n    "paper_evidence": "Top 3 performances are highlighted in bold (mean ± standard deviation of 5 runs).",\n    "code_evidence": "main.py",\n    "explanation": The paper repo
 
-### 1. [HIGH] other (confidence: ?)
+**No findings.** Nothing in this repo contradicted a claim we could check against the paper.
 
-> **Paper says:** Table 2: Comparison of test accuracies ( % ) on CIFAR-10N and CIFAR-100N (fine-label) using different methods.
-
-**Code:** `main.py`
-
-The paper reports results for several robust methods (e.g., ELR+, Divide-Mix) in Table 2, but the provided code only implements a baseline cross-entropy training procedure. The implementations of the other methods are missing, making it impossible to reproduce the reported results for those methods.
-
-*Verify this yourself before acting on it — see the human-review note in README.md.*
-
-<sub>Scoring (for eval purposes, not shown to end users in a real deployment): 0 confirmed against known ground truth, 1 unconfirmed, 0 missed. F1 = 0.0.</sub>
-
+This is not the same as a guarantee of correctness — it means our specific checks (hyperparameters, seeds, metrics, data splits, evaluation protocol) turned up nothing. See the README's human-review note before treating this as a clean bill of health.
 ---
 
 ## [SYNTHETIC FIXTURE] Not a real paper
@@ -150,39 +141,12 @@ The paper reports results for several robust methods (e.g., ELR+, Divide-Mix) in
 **Paper:** synthetic fixture, not a real paper  
 **Repo:** local:data/synthetic/synthetic_multi_defect (constructed by RepoAudit, no external URL) @ `n/a (not a`
 
-**3 findings**, ordered by how much they're worth your time:
+> ⚠️ **This run hit an error and may be incomplete:** Could not parse JSON from model response (first 300 chars): '[\n  {\n    "failure_mode": "test_set_contamination",\n    "severity": "high",\n    "paper_evidence": "All hyperparameter selection is performed on a validation split; the test set is touched exactly once, for final reporting.",\n    "code
 
-### 1. [HIGH] test_set_contamination (confidence: ?)
+**No findings.** Nothing in this repo contradicted a claim we could check against the paper.
 
-> **Paper says:** All hyperparameter selection is performed on a validation split; the test set is touched exactly once, for final reporting.
-
-**Code:** `train.py:33`
-
-The test set is used to select the best hyperparameter (max_iter) inside the training loop, violating the hold-out principle and causing data leakage.
-
-*Verify this yourself before acting on it — see the human-review note in README.md.*
-
-### 2. [HIGH] eval_on_train (confidence: ?)
-
-> **Paper says:** We report classification performance averaged over 5 random seeds (mean ± standard deviation). We report the macro-averaged F1 score as our primary metric, computed on the held-out test set only, after training is complete.
-
-**Code:** `train.py:66`
-
-The final evaluation is incorrectly performed on the training set (X_train, y_train) instead of the test set (X_test, y_test), so reported 'test' metrics are actually training metrics.
-
-*Verify this yourself before acting on it — see the human-review note in README.md.*
-
-### 3. [MEDIUM] metric_misimplementation (confidence: ?)
-
-> **Paper says:** We report the macro-averaged F1 score as our primary metric, computed on the held-out test set only, after training is complete.
-
-**Code:** `train.py:52`
-
-The f1_score function is called without specifying average='macro', causing it to default to 'binary' and incorrectly compute the metric for this multi-class scenario.
-
-*Verify this yourself before acting on it — see the human-review note in README.md.*
-
-<sub>Scoring (for eval purposes, not shown to end users in a real deployment): 3 confirmed against known ground truth, 0 unconfirmed, 0 missed. F1 = 1.0.</sub>
+This is not the same as a guarantee of correctness — it means our specific checks (hyperparameters, seeds, metrics, data splits, evaluation protocol) turned up nothing. See the README's human-review note before treating this as a clean bill of health.
+<sub>Scoring (for eval purposes, not shown to end users in a real deployment): 0 confirmed against known ground truth, 0 unconfirmed, 3 missed. F1 = 0.0.</sub>
 
 ---
 
@@ -191,29 +155,19 @@ The f1_score function is called without specifying average='macro', causing it t
 **Paper:** arXiv:2311.08675  
 **Repo:** https://github.com/xiaoboxia/LBCS @ `338a31dc5a`
 
-**2 findings**, ordered by how much they're worth your time:
+**1 finding**, ordered by how much they're worth your time:
 
-### 1. [HIGH] hyperparam_drift (confidence: ?)
+### 1. [MEDIUM] single_seed_reporting (confidence: ?)
 
-> **Paper says:** Section 5.2: "For CIFAR-10, an SGD optimizer is exploited with an initial learning rate of 0.1 and a cosine rate scheduler. 200 epochs are set totally."
+> **Paper says:** Section 5 Experiments: 'All experiments are repeated 20 times on NVIDIA GTX3090 GPUs with PyTorch.' (Table 1) and 'All experiments are repeated ten times on NVIDIA GTX3090 GPUs with PyTorch.' (Tables 2 and 3).
 
-**Code:** `run_cifar.py`
+**Code:** `run_fashion.py: no loop over seeds; only a single call to optimize() after parsing arguments.`
 
-The paper reports using SGD with lr=0.1 and cosine scheduler for 200 epochs for CIFAR-10, but the code uses Adam with lr=0.001 and 20 epochs by default.
-
-*Verify this yourself before acting on it — see the human-review note in README.md.*
-
-### 2. [MEDIUM] hyperparam_drift (confidence: ?)
-
-> **Paper says:** Section 5.2: "For F-MNIST and SVHN, an Adam optimizer (Kingma & Ba, 2015) is used with a learning rate of 0.001 and 100 epochs."
-
-**Code:** `run_fashion.py`
-
-The paper reports using Adam with lr=0.001 and 100 epochs for F-MNIST, but the code uses lr=0.005 and 20 epochs by default.
+The paper claims results are averaged over multiple runs (10-20 times), but the provided code executes a single optimization run without averaging over multiple seeds, potentially hiding variability and undermining reproducibility.
 
 *Verify this yourself before acting on it — see the human-review note in README.md.*
 
-<sub>Scoring (for eval purposes, not shown to end users in a real deployment): 0 confirmed against known ground truth, 2 unconfirmed, 1 missed. F1 = 0.0.</sub>
+<sub>Scoring (for eval purposes, not shown to end users in a real deployment): 1 confirmed against known ground truth, 0 unconfirmed, 0 missed. F1 = 1.0.</sub>
 
 ---
 
@@ -222,7 +176,8 @@ The paper reports using Adam with lr=0.001 and 100 epochs for F-MNIST, but the c
 **Paper:** arXiv:2406.03150  
 **Repo:** https://github.com/tmlr-group/SMM @ `eeac33afc4`
 
-> ⚠️ **This run hit an error and may be incomplete:** Could not parse JSON from model response (first 300 chars): '[\n  {\n    "failure_mode": "hyperparam_drift",\n    "severity": "medium",\n    "paper_evidence": "Two hundred epochs are run in total, and the 100th and the 145th epochs are the milestones.",\n    "code_evidence": "instancewise_vp.py:80",
+> ⚠️ **This run hit an error and may be incomplete:** LLM call failed: Exception: [503] {'message': 'Service temporarily overloaded', 'type': 'Service Unavailable', 'code': 503}
+{'error': {'message': 'Service temporarily overloaded', 'type': 'Service Unavailable', 'code': 503}, 'status': 503}
 
 **No findings.** Nothing in this repo contradicted a claim we could check against the paper.
 

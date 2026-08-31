@@ -19,7 +19,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-ALL_PHASES = ["baseline", "iter1", "iter2"]
+ALL_PHASES = ["baseline", "iter1", "iter2", "iter3", "final"]
 PYTHON = sys.executable
 
 

@@ -61,7 +61,7 @@ Nothing to download manually. `scripts/curate_eval_set.py` (run automatically as
 .venv/bin/python scripts/run_all.py
 ```
 
-This fetches data, runs all three phases in order, and exports agent trajectories.
+This fetches data, runs all four phases plus the final ensemble in order, exports agent trajectories, and generates the human-readable reports.
 
 ### Useful variants
 
@@ -76,7 +76,7 @@ This fetches data, runs all three phases in order, and exports agent trajectorie
 .venv/bin/python scripts/run_all.py --rescore-only
 
 # Run a single phase directly
-.venv/bin/python -m src.eval baseline    # or iter1, iter2
+.venv/bin/python -m src.eval baseline    # or iter1, iter2, iter3, final
 ```
 
 `--rescore-only` is how every cross-phase comparison in this project stays fair: when ground truth changes, earlier phases are re-scored from their **saved predictions** rather than re-run, so no phase gets an unfair advantage from a different ground truth.
@@ -92,9 +92,10 @@ Measured on the actual runs reported in `changelog.md` (9 papers each):
 | `baseline` | ~1,070 s (18 min) | 484,577 | 9 |
 | `iter1` | ~1,911 s (32 min) | 403,417 | 17 |
 | `iter2` | ~1,143 s (19 min) | 983,688 | 91 |
-| **All three** | **~70 min** | **~1.87 M** | **117** |
+| `iter3` | ~1,847 s (31 min) | 581,545 | 74 |
+| **All four** | **~101 min** | **~2.45 M** | **191** |
 
-**Cost:** all three phases fit comfortably within NVIDIA NIM's free tier. We deliberately do **not** publish a dollar figure — NVIDIA's pricing page did not render for automated fetching, so we could not verify a per-token rate, and we won't state a number we haven't confirmed. `_summary.json` reports exact token counts (`token_usage`) with `estimated_nim_credits: null` rather than a fabricated estimate.
+**Cost:** all four phases fit comfortably within NVIDIA NIM's free tier. We deliberately do **not** publish a dollar figure — NVIDIA's pricing page did not render for automated fetching, so we could not verify a per-token rate, and we won't state a number we haven't confirmed. `_summary.json` reports exact token counts (`token_usage`) with `estimated_nim_credits: null` rather than a fabricated estimate.
 
 **Variance warning:** wall-clock varies significantly run to run (NIM latency, occasional HTTP 503s that trigger retries). Results also vary somewhat even at `temperature=0` — see §7.
 
@@ -130,15 +131,19 @@ MICRO-AVG                  -             -                 9     3     6  0.6667
 |---|---|---|---|---|
 | `baseline` | 0.320 | 0.400 | 0.267 | 2.0 |
 | **`iter1`** | **0.667** | **0.750** | **0.600** | **0.5** |
-| `iter2` | 0.273 | 0.429 | 0.200 | 0.5 |
+| `iter2` | 0.455 | 0.714 | 0.333 | 0.5 |
+| `iter3` | 0.643 | 0.692 | 0.600 | 0.5 |
+| **`final`** (ensemble) | **0.759** | **0.786** | **0.733** | **0.5** |
 
-**`iter1` (Phase 2) is the best configuration.** `iter2` regressing is a real, documented result, not a mistake — see `phases/phase_3_iter2_tools.md` for the root-cause analysis.
+**`final` (the Phase 2 + Phase 4 ensemble) is the best result at F1 0.759**, and costs nothing extra to produce -- it recombines saved predictions with no new LLM calls, so `python -m src.eval final` runs in under a second once the two constituent phases exist. Of the individual phases, **`iter1` (Phase 2) and `iter3` (Phase 4) are the two strongest**, essentially tied on aggregate F1 (0.667 vs 0.643) but with different strengths -- `iter3` is the only phase that ever catches the project's real data-leakage bug, `iter1` is stronger on hyperparameter detection. `iter2` regressing relative to both is a real, documented result, not a mistake — see `phases/phase_3_iter2_tools.md` for the root-cause analysis. (`iter2`'s number here was corrected from an original 0.273 after a scoring bug was found and fixed — see the "Known issues" note below.)
 
 ---
 
 ## 7. Known issues and caveats
 
-**Results are not bit-for-bit deterministic, and the swings can be large, not just "a few points."** Every call uses `temperature=0`, but the NIM-hosted MoE models still vary run to run. Observed real effects: a byte-identical extractor prompt produced atomic claims one run and compound claims another (this is the entire cause of Phase 3's regression — see `phases/phase_3_iter2_tools.md` §3). A second baseline run, made to capture a fuller trajectory (see `outputs/trajectories/README.md`), scored **F1 0.182** against the reported 0.320 — a 0.14 swing on the same 9 papers, same code, same prompt, driven by a `ReadTimeout`, a transient HTTP 503, and the same JSON-formatting bug already documented as Phase 1's central finding, just landing on different papers. **Expect F1 to move substantially between baseline runs specifically** — Phase 1's single-shot design has no repair/retry mechanism, so it's far more exposed to transient failures than Phase 2 or 3. Iteration 1 (Phase 2, F1 0.667) has clearly and consistently been the best result across every run observed; the relative ordering of baseline vs. iteration 2 is *not* guaranteed to reproduce (0.320 vs 0.273 in the reported run; 0.182 vs 0.273 in the second baseline run) — don't treat "baseline beats Phase 3" as a stable finding, only "Phase 2 beats both" is.
+**A scoring bug was found and fixed mid-project.** `src/eval.py`'s finding-matcher originally only recognized `.py` files in `code_evidence` citations via regex. Several real ground-truth findings live in a `.sh` script or a `.md` file (e.g. `g_mixup`'s real seed-loop bug is in `run_gmixup.sh`), which made them **structurally unmatchable against any phase's predictions**, silently, since those entries were added -- a correctly-grounded prediction citing one of these files could never score as a match. Fixed (regex now covers `.py|.sh|.md|.yaml|.yml|.json|.txt|.cfg|.ini|.toml`) and all four phases rescored from their saved predictions (`src.eval.rescore_phase`, no new LLM calls). This raised `iter2`'s F1 from 0.273 to 0.455 and `iter3`'s from 0.500 to 0.643; `baseline` and `iter1` were unaffected (their predictions never happened to cite the affected file types). Full detail in `changelog.md`.
+
+**Results are also not bit-for-bit deterministic, and the swings can be large, not just "a few points."** Every call uses `temperature=0`, but the NIM-hosted MoE models still vary run to run. Observed real effects: a byte-identical extractor prompt produced atomic claims one run and compound claims another (this is the entire cause of Phase 3's regression — see `phases/phase_3_iter2_tools.md` §3). A second baseline run, made to capture a fuller trajectory (see `outputs/trajectories/README.md`), scored **F1 0.182** against the reported 0.320 — a 0.14 swing on the same 9 papers, same code, same prompt, driven by a `ReadTimeout`, a transient HTTP 503, and the same JSON-formatting bug already documented as Phase 1's central finding, just landing on different papers. **Expect F1 to move substantially between baseline runs specifically** — Phase 1's single-shot design has no repair/retry mechanism, so it's far more exposed to transient failures than the later phases. **What is stable across every run observed: Iterations 1 and 3 are clearly the two strongest configurations.** The relative ordering of baseline vs. iteration 2 is *not* guaranteed to reproduce (0.320 vs 0.455 in the reported run; 0.182 vs 0.455 in the second baseline run) — don't treat "baseline vs. Phase 3" as a stable comparison either way.
 
 **Model availability changes.** The models named in `instructions.md` (`meta/llama-3.3-70b-instruct`, `meta/llama-3.1-8b-instruct`) were **deprecated mid-project** (HTTP 410 Gone, EOL 2026-08-26). `.env.example` names the replacements we verified live. Model listing ≠ entitlement: many models in `GET /v1/models` return 404 for a given free-tier account. To find what your account can actually use:
 
@@ -146,7 +151,7 @@ MICRO-AVG                  -             -                 9     3     6  0.6667
 curl -s https://integrate.api.nvidia.com/v1/models -H "Authorization: Bearer $NVIDIA_API_KEY" | python3 -m json.tool
 ```
 
-Note `NIM_MODEL_TOOLCALLING` is a separate variable on purpose: `nemotron-3-super-120b-a12b` returns HTTP 400/500 for tool-calling and guided-JSON on this endpoint, so Phase 3 uses `openai/gpt-oss-120b`, which we verified with a real multi-turn tool-call loop. Phases 1–2 keep the original model so their published numbers stay reproducible.
+Note `NIM_MODEL_TOOLCALLING` is a separate variable on purpose: `nemotron-3-super-120b-a12b` returns HTTP 400/500 for tool-calling and guided-JSON on this endpoint, so Phase 3 uses `openai/gpt-oss-120b`, which we verified with a real multi-turn tool-call loop. Phases 1–2 keep the original model so their published numbers stay reproducible. Similarly, `NIM_MODEL_VISION` (`meta/llama-3.2-11b-vision-instruct`, Phase 4's leakage checker) was chosen after directly testing that it's actually entitled on this account and can read a real figure from a real arXiv paper -- confirmed with a live test before it was built into the pipeline, not assumed from the model listing.
 
 **Transient API errors are normal.** HTTP 503 ("Service temporarily overloaded") and read timeouts occur. `invoke_with_retry` retries with exponential backoff; occasional papers still fail a run and are logged in `_summary.json`'s `errors` field rather than silently dropped.
 

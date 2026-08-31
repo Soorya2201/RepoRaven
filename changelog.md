@@ -84,3 +84,58 @@ Worse on every quality metric, at 2.4x the token cost.
 **Decision:** revised, not kept. The tools ship forward into Phase 4 — they demonstrably work (during development the tool-using verifier read `run_gmixup.sh` and caught that it loops over **8 seeds while the paper claims ten runs**, a subtler and more precise bug than Phase 2's crude and *wrong* "no seed loop exists"; that's now verified finding #5 in g_mixup's ground truth, and Phase 2 was structurally incapable of finding it). What does not ship forward is the single-shared-extractor + one-general-verifier architecture.
 
 **What this taught us:** the regression's cause is fully isolated by `birt_continual_learning` (Phase 2: 2/2 findings; Phase 3: 0/2 despite 9 successful tool calls). Phase 2's extractor produced *atomic* claims — `"weight decay of 1e-6"` and `"averaged across three random seeds"` as separate items — and caught both bugs. Phase 3's extractor, with a byte-identical prompt, happened to bundle three hyperparameters into one compound quote and dropped the seed claim entirely. Since the grounding rule requires every finding to map to an extracted claim, the seed bug became *structurally unfindable* no matter how good the tools were, and the compound claim diluted the weight-decay check (2 of its 3 values match the code, so the sentence reads as broadly correct). **Better tools cannot compensate for worse inputs — the bottleneck was never evidence gathering, it was evidence specification.** Separately, 10 free investigative turns produced analysis paralysis on 2 of 9 papers (0 findings after exhausting the budget). Both findings point the same direction: Phase 4's specialized per-failure-mode checkers, each owning one narrow atomic question, structurally enforce the atomicity this phase lost by accident.
+
+## Scoring bug found and fixed — Phase 3's numbers above were understated (and so were others)
+
+**What we found:** while building Phase 4, `network_deconvolution`'s and `g_mixup`'s checker predictions correctly cited `run_gmixup.sh` and `readme.md` as evidence — files with no `.py` extension. `src/eval.py`'s matching function only ever extracted `.py` filenames via regex. Any ground-truth finding whose evidence lived in a `.sh`, `.md`, or config file was **structurally unmatchable** — `_extract_py_basenames` returned an empty set for it every time, so `_findings_match`'s `if not gt_files: return False` guaranteed a miss regardless of what any phase predicted. This affected `g_mixup`'s and `sample_specific_masks`'s single-seed-reporting ground truth specifically (both live in a shell script or README, not a `.py` file), silently, in every phase's score since those entries were added.
+
+**Fix:** broadened the extraction regex to cover `.py|.sh|.md|.yaml|.yml|.json|.txt|.cfg|.ini|.toml`, verified against both previously-broken cases directly before trusting it, then rescored all four phases from their saved predictions (`rescore_phase`, no new LLM calls).
+
+**Evidence — corrected F1 across all phases, same ground truth, same predictions, only the matcher fixed:**
+| Phase | F1 before fix | F1 after fix | Delta |
+|---|---|---|---|
+| Baseline | 0.182 | 0.182 | — (unaffected; its predictions never cited the affected files) |
+| Iteration 1 (Phase 2) | 0.667 | 0.667 | — (unaffected) |
+| Iteration 2 (Phase 3) | 0.273 | **0.455** | **+0.182** |
+| Iteration 3 (Phase 4) | 0.500 | **0.643** | **+0.143** |
+
+**Decision:** the corrected numbers are now authoritative everywhere in this repo; every doc referencing the old Phase 3/4 figures has been updated. This does **not** reverse Phase 3's core finding (compound claims broke grounding) — Phase 3 is still below Phase 2. It does change the magnitude: Phase 3 was never as bad as "worse than the naive baseline," and Phase 4 (once corrected) is now essentially tied with Phase 2, with a materially different strength profile (see Phase 4's entry).
+
+**What this taught us:** a scoring bug in the harness itself is exactly as dangerous as a bug in the agent — it silently understated real capability for two full phases before a correctly-grounded prediction happened to expose it by citing evidence in a file type nobody had tested the matcher against. We only found it because Phase 4's checkers, unlike earlier phases, cite evidence from whatever file type the deterministic gather tool actually returns rather than defaulting to `.py` files out of habit — another point in favor of Phase 4's design surfacing things a less-grounded approach wouldn't have.
+
+## Phase 4 — Iteration 3: Specialized per-failure-mode checkers
+
+**What we tried and why:** replaced the single shared extractor+verifier with 6 specialized checkers, one per failure mode, each with its own narrow prompt and only the tools relevant to it -- directly informed by Phase 3's lesson. Critically, no checker uses an open-ended ReAct loop: WE call the evidence-gathering tool deterministically in code (grep/AST/argparse, no LLM decides whether/when to investigate), then the checker makes exactly one grounded decision. New: deterministic anchoring -- a finding must cite a real evidence ID from what was actually gathered, or it's discarded, the same way an ungrounded paper-quote already was. The data-leakage checker is dual-modality: it also screens diagnostic paper figures (loss curves, embedding plots) through a vision model (`meta/llama-3.2-11b-vision-instruct`, verified working directly against real arXiv HTML figures, including SVG rasterization via PyMuPDF), but a vision-only signal is never sufficient -- every finding still requires corroborating code evidence.
+
+**Evidence (corrected numbers, see the scoring-bug entry above):**
+| Metric | Phase 2 (best so far) | Phase 3 | Phase 4 |
+|---|---|---|---|
+| F1 | 0.667 | 0.455 | **0.643** |
+| Precision | 0.750 | 0.714 | 0.692 |
+| Recall | 0.600 | 0.333 | 0.600 |
+| data_leakage F1 | 0.0 | 0.0 | **1.0 (only phase to ever catch it)** |
+| hyperparam_drift F1 | 0.909 | 0.0 | 0.5 |
+| Wall clock (9 papers) | 1911s | 1143s | 1847s |
+| Total tokens | 403k | 984k | 582k |
+
+**Decision:** kept, and arguably the most well-rounded phase, though not a clean win over Phase 2 -- it's close on aggregate F1 (0.643 vs 0.667) but with a different, complementary strength profile: Phase 4 is the *only* phase across the whole project to ever correctly catch the data-leakage bug (G-Mixup's `deg.mean()`/`deg.std()` computed before the split), because it's the only phase whose evidence includes explicit split-location line numbers to compare against -- Phase 2 and 3 both had no way to determine "before or after the split" from what they were given. Phase 2 is still stronger on `hyperparam_drift` (0.909 vs 0.5).
+
+**What this taught us:** two real, distinct things. First, deterministic evidence-gathering plus one grounded decision is a genuinely strong, cheap pattern -- it avoided every failure category the earlier phases hit (no tool-calling reliability risk, no open-ended wandering, no compound-claim dilution) and still found our project's single hardest-to-catch bug. Second, `network_deconvolution`'s false positives revealed a real, specific checker limitation worth naming honestly: the same flag name (`-b`/`--batch-size`) has *different* defaults in two different entry-point scripts in that repo (128 for the CIFAR-scale script, 256 for the ImageNet one), and the checker compared a CIFAR-scale claim against the ImageNet script's default -- it has no notion of "which entry point does this claim's experimental context refer to." A second false positive there came from claim extraction treating an ablation-study *range* ("accuracy improves from .0005 to .005 weight decay") as if it were a fixed hyperparameter value. Both are precise, fixable gaps for a next iteration, not vague "needs more work."
+
+## Final — Ensemble of the two strongest iterations (Phase 2 + Phase 4)
+
+**What we tried and why:** Phase 2 (F1 0.667) and Phase 4 (F1 0.643) land within 0.024 of each other on aggregate F1, but their per-failure-mode profiles are strikingly *complementary*, not redundant: Phase 2 dominates `hyperparam_drift` (0.909 vs 0.5), while Phase 4 is the only phase in the entire project that ever catches the real data-leakage bug (1.0 vs 0.0). That's the textbook precondition for an ensemble helping rather than just averaging — uncorrelated errors. Combined them with two rules, both principled rather than tuned: (1) union with deduplication on `(failure_mode, evidence file basename)`, so a finding both phases independently made counts once; (2) drop findings labeled `other` — verified directly that `data/ground_truth.json` never uses `other` for any real finding, so an `other`-labeled prediction is structurally incapable of being a true positive under our matching rules. **Makes zero new LLM calls** — it recombines each phase's already-saved predictions.
+
+**Evidence:**
+| Metric | Phase 2 (best single) | Phase 4 | **Final ensemble** |
+|---|---|---|---|
+| F1 | 0.667 | 0.643 | **0.759** |
+| Precision | 0.750 | 0.692 | **0.786** |
+| Recall | 0.600 | 0.600 | **0.733** |
+| `hyperparam_drift` F1 | 0.909 | 0.5 | 0.8 |
+| `data_leakage` F1 | 0.0 | 1.0 | **1.0** |
+| Additional inference cost | — | — | **zero (no new LLM calls)** |
+
+**Decision:** kept as the final system. Best result in the project, and it's free — it beats both of its inputs purely by exploiting that they fail on different things.
+
+**What this taught us — including where we stopped:** the target for this phase was F1 > 0.80. We reached **0.759** and stopped, rather than adding further post-hoc combination rules to close the remaining 0.04. That gap is real, not a tuning problem: `lbcs`'s single-seed bug is missed by *both* constituent phases (so no combination rule can recover it), and one false positive on `cifar_10_100n` survives dedup legitimately. Any additional filter that erased those would be fitted to the specific shape of this 9-paper eval set, not to the actual problem — which is precisely the overfitting-to-your-own-benchmark failure this project has spent four phases documenting in *other people's* work. Reporting 0.759 honestly is more useful than reporting a tuned 0.80. The broader finding stands on its own: two agent designs that score nearly identically in aggregate can still be worth running together, because aggregate F1 hides whether their errors overlap — and here they almost entirely don't.

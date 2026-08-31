@@ -1,0 +1,157 @@
+{
+  "phase": "iter2",
+  "paper_id": "synthetic_multi_defect",
+  "paper_title": "[SYNTHETIC FIXTURE] Not a real paper",
+  "repo_url": "local:data/synthetic/synthetic_multi_defect (constructed by RepoAudit, no external URL)",
+  "repo_commit": "n/a (not a git repo -- constructed directly, no version history)",
+  "agent_instructions": [
+    {
+      "agent": "extractor",
+      "model_role": "NIM_MODEL_FAST",
+      "instructions": "You are extracting specific, checkable claims from an ML research paper about its experimental methodology. Read the paper text below and extract every claim that falls into one of these categories:\n\n- hyperparameter: a specific numeric/named hyperparameter value (learning rate, batch size, epochs, weight decay, optimizer choice, etc.)\n- seed_protocol: how many random seeds/runs were used, and whether results are averaged (mean/std) across them\n- metric: the exact evaluation metric used and its averaging method (e.g. \"F1-macro\", \"top-1 accuracy\")\n- data_split_protocol: how train/validation/test data is constructed (ratios, and critically, WHAT ORDER things happen in relative to the split -- e.g. \"we normalize features before splitting\" vs \"we split, then normalize each portion separately\")\n- eval_protocol: what data the paper's final reported numbers come from (e.g. \"all reported numbers are on the held-out test set\")\n\nRules:\n- Only extract claims ACTUALLY STATED in the paper text below. Do not infer, assume, or paraphrase-in a claim the paper doesn't make. If the paper never mentions seeds, do not extract a seed_protocol claim.\n- Each claim must include an exact short quote (verbatim, copy-pasted from the text) as evidence that this claim was really made.\n- Return a JSON list. Each item: `claim_type` (one of the 5 categories above), `quote` (exact verbatim quote), `description` (1 sentence paraphrase).\n- Return `[]` if the paper makes no extractable claims in these categories. Return only the JSON, no prose."
+    },
+    {
+      "agent": "verifier (tool-using ReAct)",
+      "model_role": "NIM_MODEL_TOOLCALLING",
+      "instructions": "You are verifying whether a repository's code contradicts specific claims extracted from its paper. You will see a list of claims (each with an exact quote from the paper) and a listing of every file in the repo plus its README. You do NOT automatically see full file contents -- use the tools available to you to actually inspect the code before deciding anything.\n\nHow to check each claim type (use tools to gather real evidence for each):\n- hyperparameter: use GetArgparseDefaults or ReadConfigFile to get the EXACT default value, then compare to the claim. Don't guess from a filename.\n- seed_protocol: use GrepRepo with pattern like \"seed\" across ALL files (glob \"*\", not just \"*.py\") to check whether ANY mechanism exists anywhere in the repo (a CLI flag, a shell script loop, an aggregation step) to run/combine multiple seeds. Check .sh files too -- a seed loop can live in a shell wrapper script, not just the Python entry point.\n- metric: use FindFunctionCalls to get the EXACT arguments of the metric function call (e.g. f1_score) and compare to the claim.\n- data_split_protocol: use GrepRepo/FindFunctionCalls to trace where the claimed split happens and whether any shared computation (fit_transform, normalization stats) happens on combined data BEFORE that split -> data_leakage_global_preprocessing. Also check whether the claimed test portion is used anywhere besides final evaluation (e.g. inside a training/selection loop) -> test_set_contamination.\n- eval_protocol: use GrepRepo/FindFunctionCalls to check what data the actual evaluation call uses -> eval_on_train if it's actually train data.\n\nBefore concluding a repo LACKS something (e.g. \"no seed loop exists\"), you MUST have actually searched for it with GrepRepo across ALL files (glob \"*\"), not just the .py files you might have seen referenced. Do not conclude absence from silence -- confirm it with a tool call. Use ReadFile when you need to see a whole function/file's logic, not just grep matches.\n\nIMPORTANT: only use the actual tool-calling mechanism to call a tool -- never write out something like \"Tool call: GrepRepo(...)\" or a bare JSON object of arguments as your text response. That is not a real tool call and will not be executed. If you are not making a real tool call via the mechanism provided, your response must be the final JSON findings list (starting with `[`) and nothing else.\n\nStrict grounding rule: only report a finding if (1) a tool call actually returned evidence supporting it, AND (2) `paper_evidence` is the EXACT quote text from one of the claims given to you -- copy it verbatim. If you cannot verify a claim with the tools available, do not report anything for it.\n\nWhen you are done gathering evidence (you may call tools multiple times across several turns), respond with ONLY a JSON list of findings and no further tool calls. Each finding: `failure_mode` (one of: data_leakage_global_preprocessing, hyperparam_drift, single_seed_reporting, metric_misimplementation, test_set_contamination, eval_on_train, other), `severity` (high/medium/low), `paper_evidence` (exact quote from the matching claim), `code_evidence` (file:line), `explanation` (1-2 sentences, cite what the tool call actually showed), `confidence` (0.0-1.0). Return `[]` if every claim is consistent with what you found. Return only the JSON, no prose, once you're done investigating."
+    }
+  ],
+  "trajectory": [
+    {
+      "step": 1,
+      "agent": "extractor",
+      "action": "Extracted checkable claims from the paper text",
+      "result": [
+        {
+          "claim_type": "seed_protocol",
+          "quote": "we report classification performance averaged over 5 random seeds (mean \u00b1 standard deviation)",
+          "description": "The authors state that results are averaged over five random seeds and reported with mean and standard deviation."
+        },
+        {
+          "claim_type": "metric",
+          "quote": "We report the macro-averaged F1 score as our primary metric, computed on the held-out test set only, after training is complete.",
+          "description": "They specify that macro\u2011averaged F1 on the held\u2011out test set is the primary evaluation metric."
+        },
+        {
+          "claim_type": "data_split_protocol",
+          "quote": "All hyperparameter selection is performed on a validation split; the test set is touched exactly once, for final reporting.",
+          "description": "Hyperparameters are tuned on a validation split and the test set is used only once for final evaluation."
+        },
+        {
+          "claim_type": "eval_protocol",
+          "quote": "computed on the held-out test set only",
+          "description": "The final reported numbers are derived exclusively from the held\u2011out test set."
+        }
+      ],
+      "why_it_matters": "Each claim carries a verbatim quote. The verifier may only report findings grounded in one of these quotes -- this is the anti-hallucination mechanism introduced in Phase 2."
+    },
+    {
+      "step": 2,
+      "agent": "verifier (tool-using)",
+      "action": "Called tool ReadFile",
+      "tool_input": {
+        "file_path": "train.py",
+        "line_start": 1,
+        "line_end": 400
+      },
+      "tool_response": "=== train.py (lines 1-96 of 96) ===\n1: \"\"\"Synthetic training script \u2014 deliberately contains 3 planted bugs.\n2: \n3: See README.md: this fixture is constructed by RepoAudit for eval coverage,\n4: not a real paper's code. Each bug below is cited by exact line number in\n5: data/ground_truth.json.\n6: \n7: Note: an earlier version of this fixture also planted a single_seed_reporting\n8: bug (one hardcoded seed despite a paper claim of multi-seed averaging). That\n9: finding was retired once real-world instances were found and verified by hand\n10: in two actual ICML 2024 papers (LBCS, sample_specific_masks) \u2014 see\n11: ground_truth.json's \"lbcs\" and \"sample_specific_masks\" entries. This script\n12: now genuinely loops over multiple seeds and reports mean +/- std, so it no\n13: longer exhibits that bug (keeping it would create a false positive: a correct\n14: checker would flag it, but ground_truth would no longer list it as expected).\n15: \"\"\"\n16: \n17: import numpy as np\n18: from sklearn.datasets import load_wine\n19: from sklearn.linear_model import LogisticRegression\n20: from sklearn.metrics import f1_score, accuracy_score\n21: from sklearn.model_selection import train_test_split\n22: \n23: SEEDS = [42, 43, 44, 45, 46]  # genuinely averaged over 5 seeds, see main()\n24: \n25: \n26: def load_split(seed):\n27:     X, y = load_wine(return_X_y=True)\n28:     # Reduced to a 2-class subset so sklearn's f1_score default ('binary')\n29:     # runs without raising -- it silently scores only the positive class\n30:     # instead of the macro-average the paper claims, rather than crashing.\n31:     mask = y != 2\n32:     X, y = X[mask], y[mask]\n33:     X_train, X_test, y_train, y_test = train_test_split(\n34:         X, y, test_size=0.3, random_state=seed\n35:     )\n36:     return X_train, X_test, y_train, y_test\n37: \n38: \n39: def train_with_early_stopping(X_train, y_train, X_test, y_test, seed):\n40:     \"\"\"Select the best training epoch by watching held-out performance.\"\"\"\n41:     best_test_acc = -1.0\n42:     best_model = None\n43:     for max_iter in [10, 50, 100, 200, 500]:\n44:         model = LogisticRegression(max_iter=max_iter, random_state=seed)\n45:         model.fit(X_train, y_train)\n46:         # BUG (test_set_contamination): model selection (choosing max_iter)\n47:         # is driven by accuracy on X_test/y_test inside the training loop,\n48:         # not a held-out validation split. The test set influences which\n49:         # model configuration is kept, so the final reported test score is\n50:         # no longer an unbiased estimate.\n51:         test_acc = accuracy_score(y_test, model.predict(X_test))\n52:         if test_acc > best_test_acc:\n53:             best_test_acc = test_acc\n54:             best_model = model\n55:     return best_model\n56: \n57: \n58: def evaluate(model, X, y):\n59:     preds = model.predict(X)\n60:     # BUG (metric_misimplementation): paper claims \"macro-averaged F1 score\"\n61:     # as the reported metric; f1_score() is called here with no `average`\n62:     # argument, so sklearn defaults to average='binary', which is wrong for\n63:     # this 3-class problem (raises/misreports rather than computing F1-macro).\n64:     f1 = f1_score(y, preds)\n65:     acc = accuracy_score(y, preds)\n66:     return {\"f1\": f1, \"accuracy\": acc}\n67: \n68: \n69: def run_once(seed):\n70:     X_train, X_test, y_train, y_test = load_split(seed)\n71:     model = train_with_early_stopping(X_train, y_train, X_test, y_test, seed)\n72: \n73:     train_metrics = evaluate(model, X_train, y_train)\n74:     # BUG (eval_on_train): the line below is labeled \"Final test set\n75:     # evaluation\" but passes X_train/y_train instead of X_test/y_test, so the\n76:     # reported \"test\" numbers are actually train-set numbers.\n77:     test_metrics = evaluate(model, X_train, y_train)  # should be X_test, y_test\n78:     return train_metrics, test_metrics\n79: \n80: \n81: def main():\n82:     all_test_f1 = []\n83:     all_test_acc = []\n84:     for seed in SEEDS:\n85:         _, test_metrics = run_once(seed)\n86:         all_test_f1.append(test_metrics[\"f1\"])\n87:         all_test_acc.append(test_metrics[\"accuracy\"])\n88: \n89:     print(f\"Test F1 (mean +/- std over {len(SEEDS)} seeds): \"\n90:           f\"{np.mean(all_test_f1):.4f} +/- {np.std(all_test_f1):.4f}\")\n91:     print(f\"Test accuracy (mean +/- std over {len(SEEDS)} seeds): \"\n92:           f\"{np.mean(all_test_acc):.4f} +/- {np.std(all_test_acc):.4f}\")\n93: \n94: \n95: if __name__ == \"__main__\":\n96:     main()",
+      "why_it_matters": "Tool response fed back into the loop; the agent's next step is chosen based on what this returned."
+    },
+    {
+      "step": 3,
+      "agent": "verifier",
+      "action": "Produced final findings",
+      "result": [
+        {
+          "failure_mode": "metric_misimplementation",
+          "severity": "high",
+          "paper_evidence": "We report the macro-averaged F1 score as our primary metric, computed on the held-out test set only, after training is complete.",
+          "code_evidence": "train.py:60-64",
+          "explanation": "The evaluate() function calls f1_score(y, preds) without specifying the 'average' argument, so sklearn defaults to binary averaging, contradicting the claimed macro-averaged F1.",
+          "confidence": 1.0
+        },
+        {
+          "failure_mode": "test_set_contamination",
+          "severity": "high",
+          "paper_evidence": "All hyperparameter selection is performed on a validation split; the test set is touched exactly once, for final reporting.",
+          "code_evidence": "train.py:46-50",
+          "explanation": "train_with_early_stopping selects the best max_iter based on accuracy on X_test/y_test, i.e., the test set, violating the claim of using a validation split only.",
+          "confidence": 1.0
+        },
+        {
+          "failure_mode": "eval_on_train",
+          "severity": "high",
+          "paper_evidence": "computed on the held-out test set only",
+          "code_evidence": "train.py:73-78",
+          "explanation": "The final \"test\" evaluation mistakenly passes X_train and y_train to evaluate(), so reported test metrics are actually computed on the training set.",
+          "confidence": 1.0
+        }
+      ],
+      "retries_and_checkpoints": "none -- clean first-pass parse"
+    }
+  ],
+  "final_findings": [
+    {
+      "failure_mode": "metric_misimplementation",
+      "severity": "high",
+      "paper_evidence": "We report the macro-averaged F1 score as our primary metric, computed on the held-out test set only, after training is complete.",
+      "code_evidence": "train.py:60-64",
+      "explanation": "The evaluate() function calls f1_score(y, preds) without specifying the 'average' argument, so sklearn defaults to binary averaging, contradicting the claimed macro-averaged F1.",
+      "confidence": 1.0
+    },
+    {
+      "failure_mode": "test_set_contamination",
+      "severity": "high",
+      "paper_evidence": "All hyperparameter selection is performed on a validation split; the test set is touched exactly once, for final reporting.",
+      "code_evidence": "train.py:46-50",
+      "explanation": "train_with_early_stopping selects the best max_iter based on accuracy on X_test/y_test, i.e., the test set, violating the claim of using a validation split only.",
+      "confidence": 1.0
+    },
+    {
+      "failure_mode": "eval_on_train",
+      "severity": "high",
+      "paper_evidence": "computed on the held-out test set only",
+      "code_evidence": "train.py:73-78",
+      "explanation": "The final \"test\" evaluation mistakenly passes X_train and y_train to evaluate(), so reported test metrics are actually computed on the training set.",
+      "confidence": 1.0
+    }
+  ],
+  "ground_truth_expected": [
+    {
+      "failure_mode": "test_set_contamination",
+      "severity": "high",
+      "paper_evidence": "data/papers/synthetic_multi_defect.html: \"All hyperparameter selection is performed on a validation split; the test set is touched exactly once, for final reporting.\"",
+      "code_evidence": "data/synthetic/synthetic_multi_defect/train.py:51",
+      "explanation": "train_with_early_stopping() loops over candidate max_iter values and at line 51 scores each candidate model directly on X_test/y_test, keeping whichever configuration scores best on the test set. The test set drives model selection, not just final reporting -- contradicting the paper's claim of a separate validation split.",
+      "confidence": 1.0
+    },
+    {
+      "failure_mode": "metric_misimplementation",
+      "severity": "medium",
+      "paper_evidence": "data/papers/synthetic_multi_defect.html: \"We report the macro-averaged F1 score as our primary metric\"",
+      "code_evidence": "data/synthetic/synthetic_multi_defect/train.py:64",
+      "explanation": "f1_score(y, preds) is called with no `average` argument, so sklearn defaults to average='binary' (scoring only the positive class), not the claimed macro-average across both classes.",
+      "confidence": 1.0
+    },
+    {
+      "failure_mode": "eval_on_train",
+      "severity": "high",
+      "paper_evidence": "data/papers/synthetic_multi_defect.html: \"the test set is touched exactly once, for final reporting\" (implies final reported numbers are test-set numbers).",
+      "code_evidence": "data/synthetic/synthetic_multi_defect/train.py:77",
+      "explanation": "Line 77 is labeled \"Final test set evaluation\" but calls evaluate(model, X_train, y_train) -- the same train split already evaluated on the previous line -- instead of X_test, y_test. Verified by running the script: per-seed \"train_metrics\" and \"test_metrics\" are numerically identical every time.",
+      "confidence": 1.0
+    }
+  ],
+  "score_vs_ground_truth": {
+    "tp": 3,
+    "fp": 0,
+    "fn": 0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0,
+    "severity_weighted_precision": 1.0,
+    "unmatched_gt": [],
+    "unmatched_pred": []
+  },
+  "notes": "Recorded from a real eval run (src/eval.py), not reconstructed. 'retries_and_checkpoints' surfaces any JSON-repair pass, extraction retry, or ungrounded-finding rejection that occurred -- these are the automatic checkpoints described in the phase writeups."
+}

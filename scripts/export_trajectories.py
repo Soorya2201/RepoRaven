@@ -58,7 +58,13 @@ def _pick_representative(phase_dir: Path) -> str | None:
             d = json.loads(f.read_text())
         except json.JSONDecodeError:
             continue
-        score = len(d.get("findings", [])) * 2 + len(d.get("tool_calls_made", [])) + len(d.get("claims", []))
+        # Findings weighted heavily -- a trajectory that ends with zero
+        # findings is a poor representative example regardless of how much
+        # intermediate activity (claims, tool calls) it shows. Found by
+        # inspection: an earlier version of this heuristic picked a paper
+        # with 0 findings and 0 tool calls purely because it had more
+        # extracted claims than a paper that actually caught real bugs.
+        score = len(d.get("findings", [])) * 10 + len(d.get("tool_calls_made", [])) + len(d.get("claims", []))
         if score > best_score:
             best, best_score = d, score
     return best

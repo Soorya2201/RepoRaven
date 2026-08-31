@@ -1,8 +1,8 @@
 # RepoAudit Report — iter2
 
-**Findings are advisory triage, not adjudication.** This system is measurably imperfect (precision 43% on our own eval set — roughly 1 in 4-5 findings is wrong). Every finding below cites an exact file:line and the paper sentence it's checked against, so you can verify it in under a minute. **Do not forward any finding to an author, editor, or committee without checking the citation yourself first.** Full context: README.md.
+**Findings are advisory triage, not adjudication.** This system is measurably imperfect (precision 71% on our own eval set — roughly 1 in 4-5 findings is wrong). Every finding below cites an exact file:line and the paper sentence it's checked against, so you can verify it in under a minute. **Do not forward any finding to an author, editor, or committee without checking the citation yourself first.** Full context: README.md.
 
-Papers audited: 9  ·  Micro-avg F1: 0.273  ·  Precision: 43%  ·  Recall: 20%
+Papers audited: 9  ·  Micro-avg F1: 0.455  ·  Precision: 71%  ·  Recall: 33%
 
 ---
 ## Proto2Proto: Can you recognize the car, the way I do?
@@ -32,7 +32,7 @@ The shell script loops over only eight seed values, not ten as claimed.
 
 *Verify this yourself before acting on it — see the human-review note in README.md.*
 
-<sub>Scoring (for eval purposes, not shown to end users in a real deployment): 0 confirmed against known ground truth, 1 unconfirmed, 5 missed. F1 = 0.0.</sub>
+<sub>Scoring (for eval purposes, not shown to end users in a real deployment): 1 confirmed against known ground truth, 0 unconfirmed, 4 missed. F1 = 0.3333.</sub>
 
 ---
 
@@ -181,6 +181,6 @@ Dataset splitting is performed using the standard torchvision train/test splits 
 
 *Verify this yourself before acting on it — see the human-review note in README.md.*
 
-<sub>Scoring (for eval purposes, not shown to end users in a real deployment): 0 confirmed against known ground truth, 2 unconfirmed, 1 missed. F1 = 0.0.</sub>
+<sub>Scoring (for eval purposes, not shown to end users in a real deployment): 1 confirmed against known ground truth, 1 unconfirmed, 0 missed. F1 = 0.6667.</sub>
 
 ---

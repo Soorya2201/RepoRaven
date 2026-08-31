@@ -1,0 +1,179 @@
+{
+  "phase": "iter3",
+  "paper_id": "network_deconvolution",
+  "paper_title": "Network Deconvolution",
+  "repo_url": "https://github.com/yechengxi/deconvolution",
+  "repo_commit": "d221c221b7d8f338d79ed9a4f97613dbf8afede9",
+  "agent_instructions": [],
+  "trajectory": [
+    {
+      "step": 1,
+      "agent": "extractor",
+      "action": "Extracted checkable claims from the paper text",
+      "result": [
+        {
+          "claim_type": "hyperparameter",
+          "quote": "we set B = 64 before calculating the covariance matrix.",
+          "description": "The paper specifies a block size of 64 for covariance matrix computation."
+        },
+        {
+          "claim_type": "hyperparameter",
+          "quote": "we set the batch size to 128 and the weight decay to 0.001.",
+          "description": "A batch size of 128 and weight decay of 0.001 are used during training."
+        },
+        {
+          "claim_type": "hyperparameter",
+          "quote": "All models are trained with SGD and a learning rate of 0.1.",
+          "description": "The training uses stochastic gradient descent with a learning rate of 0.1."
+        },
+        {
+          "claim_type": "hyperparameter",
+          "quote": "it is important to use a small learning rate of 0.02 \u2212 0.1 for vanilla SGD training to prevent divergence.",
+          "description": "A learning rate range of 0.02 to 0.1 is recommended for vanilla SGD to avoid divergence."
+        },
+        {
+          "claim_type": "hyperparameter",
+          "quote": "we can use the optimal learning rate 1.0 and get high accuracy as well.",
+          "description": "An optimal learning rate of 1.0 can be used to achieve high accuracy."
+        },
+        {
+          "claim_type": "hyperparameter",
+          "quote": "the final accuracy actually improves with increased weight decay (.0005 to .005).",
+          "description": "Weight decay values between 0.0005 and 0.005 improve final accuracy when using deconvolution."
+        },
+        {
+          "claim_type": "metric",
+          "quote": "ImageNet top-1 71.95%",
+          "description": "The reported top\u20111 accuracy on ImageNet is 71.95%."
+        },
+        {
+          "claim_type": "metric",
+          "quote": "ImageNet top-5 88.63%",
+          "description": "The reported top\u20115 accuracy on ImageNet is 88.63%."
+        }
+      ],
+      "why_it_matters": "Each claim carries a verbatim quote. The verifier may only report findings grounded in one of these quotes -- this is the anti-hallucination mechanism introduced in Phase 2."
+    },
+    {
+      "step": 2,
+      "agent": "verifier",
+      "action": "Produced final findings",
+      "result": [
+        {
+          "failure_mode": "hyperparam_drift",
+          "severity": "high",
+          "paper_evidence": "we set B = 64 before calculating the covariance matrix.",
+          "code_evidence": "main_imagenet.py:51",
+          "explanation": "The evidence shows the batch-size flag (-b/--batch-size) defaults to 256, not the claimed value of 64.",
+          "confidence": 1.0
+        },
+        {
+          "failure_mode": "hyperparam_drift",
+          "severity": "high",
+          "paper_evidence": "we set the batch size to 128 and the weight decay to 0.001.",
+          "code_evidence": "main_imagenet.py:51",
+          "explanation": "The evidence shows the default batch size is 256 (flag -b/--batch-size default=256), which contradicts the claimed batch size of 128.",
+          "confidence": 1.0
+        },
+        {
+          "failure_mode": "hyperparam_drift",
+          "severity": "high",
+          "paper_evidence": "we can use the optimal learning rate 1.0 and get high accuracy as well.",
+          "code_evidence": "main_imagenet.py:56",
+          "explanation": "The repository's default learning rate is 0.1 (flag --lr/--learning-rate default=0.1), which does not match the claimed value of 1.0.",
+          "confidence": 1.0
+        },
+        {
+          "failure_mode": "hyperparam_drift",
+          "severity": "medium",
+          "paper_evidence": "the final accuracy actually improves with increased weight decay (.0005 to .005).",
+          "code_evidence": "main_imagenet.py:67",
+          "explanation": "Evidence E12 shows the default weight decay is 1e-4 (0.0001), which is outside the claimed range of .0005 to .005.",
+          "confidence": 1.0
+        }
+      ],
+      "retries_and_checkpoints": "none -- clean first-pass parse"
+    }
+  ],
+  "final_findings": [
+    {
+      "failure_mode": "hyperparam_drift",
+      "severity": "high",
+      "paper_evidence": "we set B = 64 before calculating the covariance matrix.",
+      "code_evidence": "main_imagenet.py:51",
+      "explanation": "The evidence shows the batch-size flag (-b/--batch-size) defaults to 256, not the claimed value of 64.",
+      "confidence": 1.0
+    },
+    {
+      "failure_mode": "hyperparam_drift",
+      "severity": "high",
+      "paper_evidence": "we set the batch size to 128 and the weight decay to 0.001.",
+      "code_evidence": "main_imagenet.py:51",
+      "explanation": "The evidence shows the default batch size is 256 (flag -b/--batch-size default=256), which contradicts the claimed batch size of 128.",
+      "confidence": 1.0
+    },
+    {
+      "failure_mode": "hyperparam_drift",
+      "severity": "high",
+      "paper_evidence": "we can use the optimal learning rate 1.0 and get high accuracy as well.",
+      "code_evidence": "main_imagenet.py:56",
+      "explanation": "The repository's default learning rate is 0.1 (flag --lr/--learning-rate default=0.1), which does not match the claimed value of 1.0.",
+      "confidence": 1.0
+    },
+    {
+      "failure_mode": "hyperparam_drift",
+      "severity": "medium",
+      "paper_evidence": "the final accuracy actually improves with increased weight decay (.0005 to .005).",
+      "code_evidence": "main_imagenet.py:67",
+      "explanation": "Evidence E12 shows the default weight decay is 1e-4 (0.0001), which is outside the claimed range of .0005 to .005.",
+      "confidence": 1.0
+    }
+  ],
+  "ground_truth_expected": [
+    {
+      "failure_mode": "hyperparam_drift",
+      "severity": "high",
+      "paper_evidence": "The initial learning rates are 0.01, 0.1 and 0.1 respectively for VGG-11,ResNet-18 and DenseNet-121",
+      "code_evidence": "main_imagenet.py:56, arg_parser.py:39",
+      "explanation": "main_imagenet.py:56 (and arg_parser.py:39 for the CIFAR entry point) both set a single universal --lr default of 0.1 -- there is no per-architecture override anywhere in the repo (verified: grep for 'vgg'/'VGG' near any lr/learning-rate reference returns nothing). This is correct for ResNet-18 and DenseNet-121 (both 0.1 per the paper) but WRONG for VGG-11, which the paper claims needs 0.01. The README's only ImageNet example command (`main_imagenet.py -a resnet18 ...`) never overrides --lr and there is no VGG-11/ImageNet example anywhere, so following the same pattern for VGG-11 would silently use the wrong learning rate. Found by the Phase 3 iter2 tool-calling agent, independently verified against the code and README.",
+      "confidence": 0.9
+    }
+  ],
+  "score_vs_ground_truth": {
+    "tp": 1,
+    "fp": 3,
+    "fn": 0,
+    "precision": 0.25,
+    "recall": 1.0,
+    "f1": 0.4,
+    "severity_weighted_precision": 0.2727,
+    "unmatched_gt": [],
+    "unmatched_pred": [
+      {
+        "failure_mode": "hyperparam_drift",
+        "severity": "high",
+        "paper_evidence": "we set the batch size to 128 and the weight decay to 0.001.",
+        "code_evidence": "main_imagenet.py:51",
+        "explanation": "The evidence shows the default batch size is 256 (flag -b/--batch-size default=256), which contradicts the claimed batch size of 128.",
+        "confidence": 1.0
+      },
+      {
+        "failure_mode": "hyperparam_drift",
+        "severity": "high",
+        "paper_evidence": "we can use the optimal learning rate 1.0 and get high accuracy as well.",
+        "code_evidence": "main_imagenet.py:56",
+        "explanation": "The repository's default learning rate is 0.1 (flag --lr/--learning-rate default=0.1), which does not match the claimed value of 1.0.",
+        "confidence": 1.0
+      },
+      {
+        "failure_mode": "hyperparam_drift",
+        "severity": "medium",
+        "paper_evidence": "the final accuracy actually improves with increased weight decay (.0005 to .005).",
+        "code_evidence": "main_imagenet.py:67",
+        "explanation": "Evidence E12 shows the default weight decay is 1e-4 (0.0001), which is outside the claimed range of .0005 to .005.",
+        "confidence": 1.0
+      }
+    ]
+  },
+  "notes": "Recorded from a real eval run (src/eval.py), not reconstructed. 'retries_and_checkpoints' surfaces any JSON-repair pass, extraction retry, or ungrounded-finding rejection that occurred -- these are the automatic checkpoints described in the phase writeups."
+}

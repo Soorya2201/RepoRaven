@@ -39,23 +39,38 @@ FAILURE_MODES = [
 ]
 
 
-def _extract_py_basenames(code_evidence: str) -> set:
+CODE_FILE_EXTENSIONS = r"py|sh|md|yaml|yml|json|txt|cfg|ini|toml"
+
+
+def _extract_code_basenames(code_evidence: str) -> set:
     """Ground truth code_evidence can cite multiple files (e.g. lbcs's finding
     spans 3 scripts). We match on basename rather than full path so minor
     relative-path differences between predicted and ground-truth citations
     (e.g. 'src/gmixup.py' vs 'gmixup.py') don't cause spurious mismatches --
-    within a single repo/paper's scope, same-named .py files are rare."""
+    within a single repo/paper's scope, same-named files are rare.
+
+    BUG FOUND AND FIXED: this originally only matched .py files. Several real
+    ground-truth findings cite non-.py evidence -- g_mixup's single-seed bug
+    lives in run_gmixup.sh, sample_specific_masks's in readme.md. Those
+    findings had NO possible match under the old regex: gt_files was always
+    empty for them, so _findings_match's `if not gt_files: return False`
+    made them structurally unmatchable in every phase, silently. A correct
+    prediction would score as an unmatched FP; the ground truth entry itself
+    would always count as FN. This was NOT specific to Phase 4 -- it affected
+    every phase's score wherever non-.py evidence was involved, undetected
+    until Phase 4's checker predictions were compared against these entries
+    directly and the mismatch became visible."""
     if not code_evidence:
         return set()
-    paths = re.findall(r"[\w./-]+\.py", code_evidence)
-    return {os.path.basename(p) for p in paths}
+    paths = re.findall(rf"[\w./-]+\.(?:{CODE_FILE_EXTENSIONS})\b", code_evidence, re.IGNORECASE)
+    return {os.path.basename(p).lower() for p in paths}
 
 
 def _findings_match(pred: dict, gt: dict) -> bool:
     if pred.get("failure_mode") != gt.get("failure_mode"):
         return False
-    pred_files = _extract_py_basenames(pred.get("code_evidence", ""))
-    gt_files = _extract_py_basenames(gt.get("code_evidence", ""))
+    pred_files = _extract_code_basenames(pred.get("code_evidence", ""))
+    gt_files = _extract_code_basenames(gt.get("code_evidence", ""))
     if not pred_files or not gt_files:
         return False
     return bool(pred_files & gt_files)
@@ -320,7 +335,13 @@ def _get_agent_fn(phase_name: str):
     if phase_name == "iter2":
         from src.graph import run_iter2
         return run_iter2
-    raise ValueError(f"Unknown phase: {phase_name}. Implemented so far: 'baseline' (Phase 1), 'iter1' (Phase 2), 'iter2' (Phase 3).")
+    if phase_name == "iter3":
+        from src.graph import run_iter3
+        return run_iter3
+    if phase_name == "final":
+        from src.graph import run_final
+        return run_final
+    raise ValueError(f"Unknown phase: {phase_name}. Implemented so far: 'baseline' (Phase 1), 'iter1' (Phase 2), 'iter2' (Phase 3), 'iter3' (Phase 4), 'final' (ensemble of iter1+iter3).")
 
 
 if __name__ == "__main__":

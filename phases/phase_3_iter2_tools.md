@@ -1,6 +1,16 @@
 # Phase 3 — Iteration 2: Real Tools (grep / AST / config)
 
-## Verdict up front: this iteration REGRESSED. F1 0.667 → 0.273.
+**Correction, found during Phase 4:** a scoring bug in `src/eval.py` (only
+`.py` files were recognized in evidence citations) made some of this
+phase's *correct* predictions unmatchable against ground truth. Fixed and
+rescored — see `changelog.md`'s dedicated entry. **Corrected F1: 0.455**,
+not the 0.273 originally reported below. The regression finding and its
+root cause (§3) are unaffected and still hold; only the magnitude changes.
+All numbers below this note are the ORIGINAL, now-superseded figures,
+preserved for the record of what was found at the time — see
+`phases/phase_4_iter3_specialized_checkers.md` for the corrected comparison.
+
+## Verdict up front (at the time): this iteration REGRESSED. F1 0.667 → 0.273 (now 0.455, see correction above).
 
 It is kept in the changelog as a documented negative result, not quietly
 dropped. The cause is identified, evidence-backed, and directly informs
