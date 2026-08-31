@@ -258,14 +258,48 @@ def rescore_phase(phase_name: str) -> dict:
     """Re-run scoring for an already-completed phase against the CURRENT
     ground_truth.json, without calling the LLM again. Use this after fixing
     a ground-truth annotation (e.g. Phase 2 surfaced a real bug Phase 0
-    missed) so old runs get rescored fairly instead of silently going stale."""
+    missed) so old runs get rescored fairly instead of silently going stale.
+
+    Cost/timing data (wall_clock_seconds, token_usage) is carried over from the
+    original run: a replay makes no LLM calls, so measuring it here would
+    report zeros and destroy the real cost figures the changelog cites."""
     out_dir = OUTPUTS_DIR / phase_name
+
+    prior_summary_path = out_dir / "_summary.json"
+    prior_cost = {}
+    if prior_summary_path.exists():
+        try:
+            prior = json.loads(prior_summary_path.read_text())
+            prior_cost = {
+                "wall_clock_seconds": prior.get("wall_clock_seconds"),
+                "token_usage": prior.get("token_usage"),
+            }
+        except json.JSONDecodeError:
+            pass
 
     def _replay_from_disk(paper_id: str) -> dict:
         saved = json.loads((out_dir / f"{paper_id}.json").read_text())
-        return {"findings": saved.get("findings", []), "raw_response": "", "error": saved.get("error")}
+        return {
+            "findings": saved.get("findings", []),
+            "raw_response": saved.get("raw_response", ""),
+            "claims": saved.get("claims", []),
+            "tool_calls_made": saved.get("tool_calls_made", []),
+            "error": saved.get("error"),
+        }
 
-    return run_phase(phase_name, _replay_from_disk)
+    summary = run_phase(phase_name, _replay_from_disk)
+
+    # Restore the original run's real cost figures over the replay's zeros.
+    if prior_cost.get("token_usage") and prior_cost["token_usage"].get("total_tokens"):
+        summary["wall_clock_seconds"] = prior_cost["wall_clock_seconds"]
+        summary["token_usage"] = prior_cost["token_usage"]
+        summary["_cost_note"] = (
+            "wall_clock_seconds/token_usage are from the original run; this phase was "
+            "rescored against updated ground truth without re-calling the LLM."
+        )
+        prior_summary_path.write_text(json.dumps(summary, indent=2), encoding="utf-8")
+
+    return summary
 
 
 def _get_agent_fn(phase_name: str):

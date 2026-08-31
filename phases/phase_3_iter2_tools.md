@@ -55,11 +55,46 @@ model so their published numbers stay reproducible.
 
 Phase 3 is worse on every quality metric while costing 2.4x the tokens.
 
-## 3. Root cause: the extractor got worse, and the verifier can only check what it's given
+## 3. Root cause: three distinct failure modes, not one
 
-The tools work. The regression happened **upstream of the tools**, in claim
-extraction — and `birt_continual_learning` isolates it perfectly (Phase 2:
-2/2 findings; Phase 3: 0/2, despite making 9 successful tool calls):
+**Correction to an earlier draft of this document.** The first version of
+this analysis attributed the regression primarily to compound claim
+extraction. A per-paper audit of the saved runs shows that was
+*incomplete* — Phase 3 failed in three mechanically different ways, plus a
+fourth "completed cleanly but still wrong" bucket:
+
+| Failure mode | Papers | What happened |
+|---|---|---|
+| Extractor total failure | `network_deconvolution` | 0 claims extracted → nothing for the verifier to check |
+| Extractor schema violation | `lottery_ticket_hypothesis` | 15 claims returned, **every one missing `claim_type`** |
+| Verifier never committed | `lbcs` | Correct claim, correct tool call, exhausted 10 turns without answering |
+| Completed but still wrong | 4 of the remaining 6 | Full clean run, wrong output |
+
+Only 2 of 9 papers both completed cleanly *and* scored well
+(`synthetic_multi_defect` 3/3; `proto2proto` correctly clean).
+
+**`lbcs` is the most damning case, because nothing was missing.** The
+extractor supplied the right claim (`"All experiments are repeated 20 times
+on NVIDIA GTX3090 GPUs with PyTorch."`). The verifier then made *exactly the
+correct* investigative move — `GrepRepo(pattern="seed", file_glob="*")`,
+the whole-repo search this phase was built to enable. And then it exhausted
+its iteration budget without ever producing a conclusion. Right claim, right
+tool, right query, no answer.
+
+**The structural reason Phase 2 wins:** Phase 2's verifier had exactly one
+decision to make — *given this claim and this code, is there a
+contradiction?* Phase 3's verifier had to additionally decide what to
+investigate, which of six tools to use, whether the evidence so far was
+sufficient, and when to stop. Four extra decisions per claim, each an
+opportunity to wander. On `lottery_ticket_hypothesis` (15 claims) that
+compounds into paralysis. **More capability created more ways to fail; the
+constraint was the feature.**
+
+### The extractor degradation (still real, still worth reading)
+
+`birt_continual_learning` remains the cleanest illustration of the *input
+quality* half of the problem (Phase 2: 2/2 findings; Phase 3: 0/2 despite 9
+successful tool calls):
 
 **Phase 2 extracted these as separate, atomic claims:**
 - `"weight decay of 1e-6"` → verifier checked it → found code default `0.05` → **caught**
