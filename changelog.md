@@ -27,15 +27,15 @@
 **Evidence:**
 | Metric | Prev phase | This phase | Delta |
 |---|---|---|---|
-| Overall F1 | n/a (no prior agent) | 0.348 | — |
-| Precision / Recall | n/a | 0.400 / 0.308 | — |
-| FPR on clean papers | n/a | 1.333 findings/paper | — |
+| Overall F1 | n/a (no prior agent) | 0.320 | — |
+| Precision / Recall | n/a | 0.400 / 0.267 | — |
+| FPR on clean papers | n/a | 2.0 findings/paper | — |
 | Papers with usable output | n/a | 5/9 (4 hit a JSON parse bug) | — |
 | Wall clock (9 papers) | n/a | 1069.9s | — |
 | Total tokens (9 papers) | n/a | 484,577 | — |
 
 (Numbers above were rescored after Phase 2 against a corrected ground truth
-— Phase 2's agent found real bugs in `birt_continual_learning` and
+— Phase 2 and Phase 3 agents found real bugs in `birt_continual_learning` and
 `g_mixup` that our original Phase 0 annotation missed. Original in-phase
 numbers were F1 0.421 / precision 0.400 / recall 0.444 / FPR 1.0; rescoring
 against the more complete ground truth makes the baseline look honestly
@@ -56,9 +56,9 @@ Two infrastructure bugs had to be fixed before any real numbers were possible: C
 **Evidence:**
 | Metric | Prev phase (rescored) | This phase | Delta |
 |---|---|---|---|
-| Overall F1 | 0.348 | 0.720 | +0.372 |
-| Precision / Recall | 0.400 / 0.308 | 0.750 / 0.692 | +0.350 / +0.385 |
-| FPR on clean papers | 1.333 | 0.333 | −1.0 (4x fewer false alarms) |
+| Overall F1 | 0.320 | 0.667 | +0.347 |
+| Precision / Recall | 0.400 / 0.267 | 0.750 / 0.600 | +0.350 / +0.333 |
+| FPR on clean papers | 2.0 | 0.5 | −1.5 (4x fewer false alarms) |
 | hyperparam_drift F1 (by-mode) | 0.0 | 1.0 | +1.0 |
 | Wall clock (9 papers) | 1069.9s | 1910.8s | +840.9s (2 LLM calls/paper now) |
 | Total tokens (9 papers) | 484,577 | 403,417 | −81,160 (fewer per-call, more calls) |
@@ -66,3 +66,21 @@ Two infrastructure bugs had to be fixed before any real numbers were possible: C
 **Decision:** kept. This is the single biggest jump in the whole changelog so far, across every metric simultaneously, not a tradeoff.
 
 **What this taught us:** two things, one about the design and one about our own process. On design: claim-by-claim systematic checking essentially solved `hyperparam_drift` detection (0.0 → 1.0 F1) — forcing the model to extract every specific numeric claim first, then check each one, beats holistic "does anything look wrong" scanning. On process: while evaluating this phase's results, we found the agent surfacing real bugs in `birt_continual_learning` and `g_mixup` that weren't in our own Phase 0 ground truth — verified both by hand before accepting them, then rescored Phase 1 fairly against the corrected data (making Phase 1 look worse, honestly, not better). A reproducibility-auditing tool ended up auditing its own evaluation harness. We also found a real, still-open limitation: the context builder only reads `.py` files, so a verifier call incorrectly flagged `g_mixup` for single-seed reporting when the real seed loop lives in a `.sh` script it never saw — a concrete, evidence-backed argument for Phase 3's tool-based approach rather than a prompt fix.
+
+## Phase 3 — Iteration 2: Real tools (grep / AST / config) — REGRESSED, kept as a negative result
+
+**What we tried and why:** Phase 2's failure analysis pointed at the context layer, not the reasoning layer: the verifier could only see `.py` file heads, so a real seed loop living in `run_gmixup.sh` was invisible and absence-checks ("is there a `--seed` flag anywhere in this 30-file repo?") were impossible. So we gave the verifier real tools — whole-repo grep across every file type, tree-sitter AST search for exact function calls/assignments, structured argparse/YAML parsing, plus a `ReadFile` tool — and turned it into a multi-turn ReAct agent with native tool-calling. This also required a model change: `nemotron-3-super` returns HTTP 400/500 on tool-calling for this endpoint, so the verifier moved to `openai/gpt-oss-120b` (verified with a real multi-turn tool-call loop).
+
+**Evidence:** (all phases rescored against identical current ground truth)
+| Metric | Phase 2 | Phase 3 | Delta |
+|---|---|---|---|
+| Overall F1 | 0.667 | 0.273 | **−0.394** |
+| Precision / Recall | 0.750 / 0.600 | 0.429 / 0.200 | −0.321 / −0.400 |
+| Wall clock (9 papers) | 1910.8s | 1142.5s | −768s |
+| Total tokens | 403,417 | 983,688 | **+580,271 (2.4x)** |
+
+Worse on every quality metric, at 2.4x the token cost.
+
+**Decision:** revised, not kept. The tools ship forward into Phase 4 — they demonstrably work (during development the tool-using verifier read `run_gmixup.sh` and caught that it loops over **8 seeds while the paper claims ten runs**, a subtler and more precise bug than Phase 2's crude and *wrong* "no seed loop exists"; that's now verified finding #5 in g_mixup's ground truth, and Phase 2 was structurally incapable of finding it). What does not ship forward is the single-shared-extractor + one-general-verifier architecture.
+
+**What this taught us:** the regression's cause is fully isolated by `birt_continual_learning` (Phase 2: 2/2 findings; Phase 3: 0/2 despite 9 successful tool calls). Phase 2's extractor produced *atomic* claims — `"weight decay of 1e-6"` and `"averaged across three random seeds"` as separate items — and caught both bugs. Phase 3's extractor, with a byte-identical prompt, happened to bundle three hyperparameters into one compound quote and dropped the seed claim entirely. Since the grounding rule requires every finding to map to an extracted claim, the seed bug became *structurally unfindable* no matter how good the tools were, and the compound claim diluted the weight-decay check (2 of its 3 values match the code, so the sentence reads as broadly correct). **Better tools cannot compensate for worse inputs — the bottleneck was never evidence gathering, it was evidence specification.** Separately, 10 free investigative turns produced analysis paralysis on 2 of 9 papers (0 findings after exhausting the budget). Both findings point the same direction: Phase 4's specialized per-failure-mode checkers, each owning one narrow atomic question, structurally enforce the atomicity this phase lost by accident.

@@ -77,7 +77,18 @@ comparison below is fair. **Phase 1's numbers in `phase_1_baseline.md` were
 updated accordingly** (its own score got worse, since it never had a chance
 to catch bugs we hadn't found yet either).
 
-## 3. Results table (rescored against corrected ground truth)
+**Note added after Phase 3:** the numbers below were rescored (same saved
+predictions, `src.eval.rescore_phase`) against ground truth that grew again
+during Phase 3 — the Phase 3 agent surfaced real bugs in `g_mixup` (a 5th
+finding: the shipped script loops 8 seeds vs. the paper's claimed ten runs)
+and `network_deconvolution` (previously annotated clean — one universal
+learning-rate default that's wrong for VGG-11). Rescored Phase 2 figures:
+**F1 0.667, precision 0.750, recall 0.600, FPR-on-clean 0.5**. Phase 2 still
+beats both Phase 1 (0.320) and Phase 3 (0.273) on identical ground truth.
+The in-phase numbers below (F1 0.720) were correct against the ground truth
+as it stood at the time.
+
+## 3. Results table (as scored at the time of Phase 2)
 
 | paper_id | n_expected | n_predicted | TP | FP | FN | F1 |
 |---|---|---|---|---|---|---|
