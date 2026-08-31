@@ -2,7 +2,11 @@
 data/repos/
 __pycache__/
 *.pyc
-outputs/
+# Per-phase run artifacts are regenerable via scripts/run_all.py, so they're
+# not committed -- EXCEPT outputs/trajectories/, which is micro1 required
+# deliverable #4 and must ship with the submission.
+outputs/*
+!outputs/trajectories/
 .venv/
 *.egg-info/
 .DS_Store

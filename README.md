@@ -38,6 +38,19 @@ Six failure modes, from the Kapoor & Narayanan (2023) leakage taxonomy plus comm
 
 **Output:** a structured report where every finding cites a `file:line` in the repo *and* the verbatim paper sentence it contradicts. See `outputs/<phase>/<paper_id>.txt`.
 
+### ⚠️ Findings are advisory. A qualified human must review before any action.
+
+RepoAudit produces **claims that named researchers made specific errors in published work.** Those claims are reputationally consequential and this system is measurably imperfect — our best configuration runs at 0.750 precision, meaning roughly **1 in 4 findings is wrong.** We have observed it hallucinate confident, specific, entirely false claims (see `phases/phase_1_baseline.md`, the proto2proto case: it asserted a paper reported single-seed results when the paper never mentions seeds at all).
+
+Accordingly:
+
+- **Every finding is designed to be checkable in ~30 seconds** — it cites an exact `file:line` and the verbatim paper sentence. Check it before you believe it.
+- **No output of this system should be sent to an author, editor, or committee without a qualified human verifying the cited code and quote first.**
+- The intended use is *triage* — pointing a reviewer at the 3 things worth their 15 minutes — **not** adjudication.
+- This project reads public repositories read-only. It never modifies, contacts, or publishes anything on its own.
+
+A consensus check plus an explicit human-approval gate for high-severity findings was the planned Phase 5 (`instructions.md` §6) and **is not built** — the deadline arrived first. Until it exists, the human review step is procedural, described here, rather than enforced in code. We consider this the most significant open gap in the system; see `MICRO1_JUDGE_AUDIT.txt`.
+
 ---
 
 ## Improvement Changelog
