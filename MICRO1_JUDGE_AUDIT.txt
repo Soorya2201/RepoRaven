@@ -1,202 +1,217 @@
-RepoAudit — Strict Micro1 Judge Audit
-======================================
-Written as the harshest reasonable reading of the actual brief (rubric,
-ground rules, four questions, four deliverables) against the CURRENT state
-of the repo, mid-Phase-2, as of this snapshot. Every item below is either
-verified against the repo's actual current files or an honest interpretive
-risk, not invented. Ordered roughly worst-first.
+RepoAudit — Strict Micro1 Judge Audit (v2)
+============================================
+Rewritten from scratch against the CURRENT state of the repo, after a full
+pass fixing everything fixable from v1 (kept below, in git history, for
+anyone who wants the delta). Same standard as before: every item traces to
+a checked file or a direct quote from the brief, ordered worst-first. This
+version is written to be at least as harsh as v1 was — fixing most of the
+last list is not evidence the list is exhausted.
 
-INSTANT-FAIL-RISK: MISSING REQUIRED DELIVERABLES (if judged right now)
-------------------------------------------------------------------
-- The brief lists 4 required final deliverables. As of this snapshot, 3 of 4
-  do not exist at all:
-  * No top-level README.md. Deliverable #1 explicitly requires it to
-    "introduce the intended user," "explain their current bottleneck," and
-    carry a labeled "Improvement Changelog." We have changelog.md and
-    problem.md separately, but not the single README the brief asks for.
-  * No REPRODUCTION.md and no scripts/run_all.py (deliverable #2). A judge
-    right now has ZERO documented path to reproduce anything.
-  * No solution video (deliverable #3). Not startable until the pipeline is
-    feature-complete; real risk given the event ends tomorrow.
-- outputs/trajectories/ EXISTS BUT IS EMPTY (checked directly). Deliverable
-  #4 requires "representative trajectories for every agent you used... from
-  the agent instructions to the final result... tool calls... retries...
-  human checkpoints." We have already RUN two full agents (baseline, iter1)
-  and have raw responses sitting in outputs/baseline/*.json and
-  outputs/iter1/*.json, but none of it has been shaped into the trajectory
-  format the brief wants, and none of it lives in outputs/trajectories/ yet.
-  A judge grading strictly could call this "deliverable not met" even though
-  the underlying data exists.
+====================================================================
+STILL BLOCKING (would fail submission outright, right now)
+====================================================================
 
-GROUND RULE VIOLATIONS / RISKS (the brief calls these "baseline
-requirements for every eligible project" — not optional)
-------------------------------------------------------------------
-- Rule #8 "Keep credentials and private information outside the submission."
-  A live NVIDIA API key was pasted in plaintext directly into this chat
-  session by the user. It is correctly NOT committed to git (verified:
-  `git ls-files` shows .env is untracked) and .gitignore correctly excludes
-  it. BUT: the key now exists in plaintext in this conversation's history.
-  If any chat log, screenshot, or export of this session is ever included
-  anywhere near the submission (even accidentally, e.g. in a shared folder,
-  a demo recording that shows a terminal scrollback, or a support ticket),
-  that's a direct rule #8 violation with a live credential exposed. Hard
-  recommendation: rotate this key before submission regardless of whether
-  it's ever actually exposed, purely because it was said aloud once.
-- Rule #4 "Keep consequential actions controlled through a sandbox or
-  simulation. Add human approval before the action happens." Currently (end
-  of Phase 2) there is NO human-approval gate anywhere in the pipeline
-  before a finding is written to the final report. Phase 5 (not yet built)
-  is supposed to add exactly this. Until it exists, a strict reading is:
-  the current pipeline can accuse a real, named paper's real, named authors
-  of a specific reproducibility failure (data leakage, etc.) and publish
-  that report with zero human review step. That is a real-world-consequential
-  action (reputational) with no approval gate. Fails this rule as currently
-  built; only resolved once Phase 5 ships.
-- Rule #5 "Make a qualified human reviewer part of any solution that could
-  significantly affect someone." Same underlying gap as above — a false
-  positive naming a real paper as leaking data is exactly the kind of thing
-  that "could significantly affect someone" (the paper's authors). No human
-  reviewer step exists yet.
-- Rule #3 "Use every tool and component according to its license and service
-  terms." We never explicitly checked: (a) NVIDIA NIM's terms of service for
-  hackathon/automated-audit use at this volume, (b) whether feeding the full
-  text of someone else's GitHub repo through a third-party LLM API is
-  consistent with that repo's license. Several eval-set repos DO have
-  LICENSE files (cifar_10_100n, lottery_ticket_hypothesis,
-  birt_continual_learning, network_deconvolution, sample_specific_masks,
-  and the dropped fairness_demographic_shift) that were never actually read
-  or logged. Likely fine (research code, typically permissive licenses) but
-  "likely fine, never checked" is not the same as "verified," and a strict
-  judge can dock this.
-- Rule #2 "Make it clear what existed before the competition and what you
-  added." No document currently states this explicitly and up front. It's
-  implicit in code comments and citations, but the brief wants this stated
-  clearly (e.g. "we built: the audit pipeline, eval harness, ground truth,
-  synthetic fixture. We used as-is: LangGraph, NVIDIA NIM models, the 8
-  external repos as unmodified test subjects"). Missing until README exists.
-- Rule #9 "Connect every claim about your results to the evidence you
-  submit." Mostly done well (every ground-truth finding cites file:line and
-  a real quote) — but the "48 hours per paper, 41.4% completion" PaperBench
-  statistic used throughout problem.md and instructions.md was never
-  independently re-verified against the actual PaperBench paper in this
-  session; it was carried over from instructions.md's own text. That's
-  citing a citation, not verifying a source. A strict judge could ask "did
-  you check this yourself?" and the honest answer right now is no.
+1. NO SOLUTION VIDEO EXISTS. Deliverable #3, ≤5 minutes, required. Checked
+   directly: no .mp4/.mov anywhere in the repo. This is not fixable by me —
+   it requires a human recording a screen. Everything else in this document
+   is secondary to this one line. A complete, well-argued submission with no
+   video is an incomplete submission.
 
-RUBRIC-CRITERION-BY-CRITERION FAULTS
-------------------------------------------------------------------
-Problem & User Value (15 pts)
-- "Who has this problem" is answered with a generic persona (journal
-  editors / PC chairs / team leads), not a real named user or a direct
-  quote from someone who's actually said "I need this." Everything is
-  inferred from published benchmark papers, not primary user research. A
-  judge could reasonably say the user need is asserted, not demonstrated.
+2. THE PUSH JUST HAPPENED, UNTESTED FROM A JUDGE'S PERSPECTIVE. The repo is
+   now public at github.com/Soorya2201/repoaudit (verified: `gh repo view`
+   returns visibility=PUBLIC, HEAD commit matches local). But nobody has
+   ever cloned it fresh and run `scripts/run_all.py` end to end except the
+   person who wrote it. REPRODUCTION.md's claims are the AUTHOR verifying
+   the author's own work. A strict judge discounts self-verification more
+   than independent reproduction — and there has been no independent
+   reproduction of this repo, ever, by anyone.
 
-Agent Solution & Engineering (30 pts) — the single biggest point bucket
-- Only 2 of the 5 planned iterations exist (baseline, extractor+verifier).
-  Phase 3 (real tools: grep/AST/config), Phase 4 (6 specialized checkers),
-  and Phase 5 (consensus + human gate) are all still unbuilt. If time runs
-  out, "Agent Solution & Engineering" gets judged on a fraction of the
-  planned design.
-- We confirmed NVIDIA NIM's hosted endpoint returns HTTP 400/500 on both
-  guided-JSON structured output AND tool/function-calling for our primary
-  model (tested directly, not assumed). Phase 3's plan explicitly calls for
-  "a ReAct-style agent that can call these tools" — real tool-calling. If
-  the backend can't do native tool-calling reliably, Phase 3 has to fall
-  back to a manual prompt-parse-execute-reprompt loop, which is more custom
-  code, more surface area for bugs, and weaker "engineering" evidence than
-  clean native tool use would have been.
+====================================================================
+GROUND RULE STATUS (re-checked one by one)
+====================================================================
 
-End-to-End Quality (20 pts) — "the finish of something a person would sign
-their name to rather than an obvious AI generated draft"
-- Every output artifact that exists right now (outputs/baseline/*.txt,
-  outputs/iter1/*.txt) is a raw developer/debug log — file-path dumps,
-  JSON blobs, error strings. Nothing has been designed for the actual
-  stated end user (a PC chair with 15 minutes). There is currently no
-  "final report" format meant for a human who isn't debugging the pipeline.
-  This is arguably the single biggest quality gap right now: we've built a
-  measurement harness, not yet a product.
+Rule #8 (credentials out of submission) — PARTIALLY OPEN.
+  .env confirmed absent from git history on the pushed remote (checked:
+  `git ls-tree -r origin/main` has no .env). But TWO live API keys (NVIDIA
+  and a Moonshot key that turned out to have no balance) were pasted in
+  plaintext into this chat session. Neither has been rotated. I cannot
+  verify rotation happened — that action is entirely outside what I can do
+  from here. This is not resolved, it is unresolved and unresolvable by me.
+  A judge cannot see this risk (it's not in the repo), but it is real.
 
-Measured Improvement (15 pts)
-- The brief says "Choose ONE primary metric that reflects what success
-  means to the user." We built a multi-metric dashboard (precision, recall,
-  F1, severity-weighted precision, FPR-on-clean, per-failure-mode
-  breakdown) with no single metric explicitly designated as THE headline
-  number. A strict judge could read this as not following the instruction
-  as given, even though the underlying data is arguably more rigorous.
+Rule #4/#5 (human approval / qualified reviewer) — MITIGATED ON PAPER,
+  NOT ENFORCED IN CODE. The README now states plainly that findings are
+  advisory, cites the system's own measured precision (0.750 on our best
+  phase — meaning roughly 1 in 4 findings is wrong), and links a specific
+  documented hallucination case (proto2proto). generate_report.py repeats
+  a "verify before acting" line under every single finding. This is a real,
+  substantive improvement over v1's "nothing exists." But a disclaimer is
+  not a gate. Nothing in the code stops a finding from being read, copied,
+  and sent to a real author. A genuinely strict reading of rule #4
+  ("consequential actions controlled through a sandbox... human approval
+  BEFORE the action happens") wants an enforced step, not a warning label.
+  Score this as "addressed the letter, not fully the spirit."
 
-Reproducibility (15 pts)
-- No REPRODUCTION.md, no run_all.py, as stated above.
-- Reproduction depends on cloning 8 external GitHub repos live at judging
-  time. If any one of them is deleted, renamed, or made private between now
-  and judging, that paper's reproduction breaks and this is currently
-  undocumented as a risk anywhere.
-- NIM free-tier credit balance was never confirmed (flagged in
-  phase_0_setup.md). If credits run out mid-run during judging, the
-  reproduction fails partway with no documented fallback.
-- The eval set is 9 papers, not the "ten or more" the brief calls "a good
-  target when the task allows it." Logged honestly throughout, but still a
-  real, nameable gap against the brief's own stated preference.
+Rule #2 (what existed before vs. what was built) — RESOLVED.
+  README has an explicit section. Verified accurate against actual
+  dependencies (LangGraph, NIM models, gpt-oss-120b, tree-sitter — all
+  third-party; the pipeline, agents, tools, eval harness, and ground truth
+  are ours).
 
-Hot Take / Insights (5 pts)
-- Not written yet. Lowest point value, lowest risk, but currently zero.
+Rule #3 (license/ToS compliance) — RESOLVED, WITH AN HONEST GAP NAMED.
+  Checked all 8 real eval-set repos' LICENSE files directly this session:
+  Apache 2.0 (lottery_ticket_hypothesis, birt_continual_learning,
+  network_deconvolution), MIT (sample_specific_masks), CC BY-NC 4.0
+  (cifar_10_100n — non-commercial, consistent with non-commercial hackathon
+  use). Three repos (g_mixup, proto2proto, lbcs) have NO license file at
+  all — default all-rights-reserved. Documented plainly in REPRODUCTION.md
+  rather than glossed over: read-only automated analysis producing short
+  cited quotes is a defensible use even without an explicit grant, but "we
+  checked and it's ambiguous for 3 of 8" is the honest statement, not "all
+  clear." NVIDIA's API Catalog free tier is independently confirmed
+  (web search, not assumed) to be positioned for research/hackathon use.
 
-"ONE CHALLENGING CASE" (explicitly called out in the four-question
-framework and rubric)
-------------------------------------------------------------------
-- The brief's own worked example ("Candidate evaluation") explicitly models
-  "one candidate with conflicting signals" as a real, load-bearing part of
-  reproducing the result. instructions.md's own plan for this was "one repo
-  where you'll plant a known defect" — i.e., a real production repo with a
-  deliberately injected bug. That category (C) was explicitly skipped by
-  direction. What exists instead is a wholly synthetic, small (~90-line)
-  sklearn toy script. It correctly plugs the ground-truth gap for scoring
-  purposes, but a strict judge could reasonably say a synthetic toy fixture
-  is a materially weaker "challenging case" than a real, complex, planted
-  bug in production-scale code would have been — the brief's own examples
-  suggest more.
+Rule #9 (connect claims to evidence) — MATERIALLY IMPROVED.
+  The PaperBench "41.4% / 48 hours" stat, previously cited from
+  instructions.md without independent verification, was fetched and
+  confirmed directly from the arXiv paper's own text this session — and
+  the README was corrected in the process, because the original phrasing
+  implied it applied to the full 20-paper benchmark when the paper's own
+  text scopes it to a 3-paper subset with 8 participants. That's a real
+  found-and-fixed inaccuracy, not just a checkbox. Nothing else in the
+  README or REPRODUCTION.md was similarly re-verified — this was one stat,
+  checked because it was flagged, not a systematic pass over every claim.
 
-PROCESS / HOUSEKEEPING FAULTS (small individually, they add up)
-------------------------------------------------------------------
-- `.claude/` (local tool state, e.g. scheduled_tasks.lock) is NOT in
-  .gitignore and currently shows as untracked-but-present. Should be
-  ignored; as-is, risks getting swept into a careless `git add -A` and
-  committed as noise that has nothing to do with the project.
-- data/repos/fairness_demographic_shift/ is a leftover clone from a
-  candidate paper that was investigated and DROPPED (no arXiv HTML, PDF
-  blocked by OpenReview's bot protection). It's gitignored so won't be
-  committed, but it's dead local clutter that could confuse anyone poking
-  around the working tree, including a judge with terminal access.
-- `estimated_nim_credits` is `null` in every _summary.json by design (the
-  $/credit rate was never confirmed) — correctly honest, but if a judge
-  skims the JSON without reading the caveat in phase_0_setup.md, it reads
-  as "this project didn't bother tracking cost," when the real story is
-  "tracked precisely in tokens, deliberately didn't fabricate a dollar
-  figure it couldn't verify." Worth surfacing this distinction explicitly
-  wherever cost is discussed in the final README, not just buried in a
-  Phase 0 known-issues list.
-- Extracted "confidence" scores on every finding are currently decorative —
-  nothing in src/eval.py's scoring logic uses them (only "severity" feeds
-  the severity-weighted-precision metric). A judge reading the code closely
-  could ask "why compute this if it's unused."
+Rule #10 (give judges enough access) — RESOLVED, PENDING #2 ABOVE.
+  Public repo, pushed, README + REPRODUCTION.md give a documented path.
+  Undermined only by the fact that path has never been walked by anyone
+  but the author (see BLOCKING #2).
 
-TIMELINE RISK (not a rubric line item, but existential)
-------------------------------------------------------------------
-- Event ends 2026-08-31. As of this audit: Phases 3, 4, 5 unbuilt; README,
-  REPRODUCTION.md, run_all.py, video, and trajectory files all unbuilt. That
-  is the majority of the required deliverables, on a one-day runway. Every
-  fault listed above is fixable, but only if there's enough clock left to
-  fix it — this is the actual binding constraint, not any single design
-  flaw above.
+====================================================================
+RUBRIC-CRITERION RE-AUDIT
+====================================================================
 
+Problem & User Value (15 pts) — UNCHANGED, STILL A REAL GAP.
+  Still a generic persona ("journal editors / PC chairs / team leads"),
+  still inferred from published benchmark papers rather than a real
+  person's stated need. Nothing was done about this in this pass because
+  nothing COULD be done without fabricating a testimonial, which would be
+  worse. Naming this honestly: this is the weakest of the six criteria and
+  will likely stay that way.
+
+Agent Solution & Engineering (30 pts) — BETTER ARGUED, STILL INCOMPLETE
+  AGAINST THE ORIGINAL PLAN.
+  3 of 5 planned iterations exist (baseline, extractor+verifier, tools).
+  The README now explicitly states WHY we stopped (deliverables over more
+  iterations) rather than leaving it implicit — that's new since v1 and
+  directly closes part of this gap. But the biggest-value-bucket criterion
+  is still judged on 60% of the originally planned engineering surface.
+  Phase 3's regression is genuinely well-analyzed (three distinct isolated
+  failure modes, not hand-waved), which is a point in favor of "purposeful
+  engineering," but a judge could also read "your third iteration made
+  things worse and you didn't build a fourth to fix it" as evidence the
+  design process stalled, not just that it stopped deliberately. Both
+  readings are available from the same facts; which one a judge picks is
+  not fully in our control.
+
+End-to-End Quality (20 pts) — MATERIALLY FIXED, VERIFY THE FIX HOLDS.
+  scripts/generate_report.py existed to fix exactly the "raw dev logs"
+  criticism from v1. It produces genuinely readable output (verified
+  directly: outputs/iter1/FINAL_REPORT.md, 9 papers, findings sorted by
+  severity/confidence, human-review line under every finding). One bug
+  was caught and fixed IN THIS SESSION before shipping: the first draft
+  rendered successful JSON-repair recoveries as scary warning banners,
+  which would have made the "polished report" look broken on inspection —
+  worth naming because it shows the fix needed its own QA pass, not just
+  existing. A judge should be shown FINAL_REPORT.md directly, not the raw
+  .txt/.json files, or this fix does no good.
+
+Measured Improvement (15 pts) — STRENGTHENED.
+  F1 is now explicitly named as THE primary metric per the brief's own
+  instruction ("choose ONE"), with everything else framed as supporting
+  diagnostic. This is a real, direct fix of a real v1 finding.
+
+Reproducibility (15 pts) — IMPROVED, ONE ITEM STILL OPEN.
+  REPRODUCTION.md and run_all.py exist and (per the author's own testing)
+  work. NIM credit balance is STILL unconfirmed — unchanged from v1, and
+  still the single most concrete "this could just fail during judging"
+  risk, since it depends on a dashboard number nobody has looked at in
+  this session. The eval set is still 9 papers, still short of the
+  brief's "ten or more" preference, still logged honestly rather than
+  padded.
+
+Hot Take / Insights (5 pts) — RESOLVED.
+  Written, and specific: "agency amplifies input quality, it does not
+  substitute for it," backed by the lbcs case (right claim, right tool
+  call, no answer) rather than asserted in the abstract.
+
+====================================================================
+NEW FINDINGS THIS PASS (did not exist to find in v1)
+====================================================================
+
+- The Phase 3 root-cause writeup in v1's timeframe would have been WRONG
+  had it shipped as originally drafted: it attributed the regression
+  primarily to compound claim extraction, but a full per-paper audit
+  (done this session) found three mechanically distinct failure modes,
+  and the compound-claim story was only one of them, isolated to one
+  paper. The document was caught and corrected before submission, with
+  the correction left visible in place rather than silently rewritten.
+  This is disclosed here specifically so a judge doesn't have to trust
+  that self-correction happened — phases/phase_3_iter2_tools.md itself
+  says "correction to an earlier draft" in its own text.
+
+- rescore_phase() had a real bug: every time it re-scored a phase against
+  updated ground truth, it silently zeroed that phase's recorded wall-clock
+  time and token cost, because a rescore replays saved predictions without
+  calling the LLM. This would have made the cost-per-task evidence the
+  brief explicitly asks for ("Cost per task" in its suggested table)
+  unreproducible and, if unnoticed, would have let a stale/wrong cost
+  figure sit in a committed file indefinitely. Fixed to carry the original
+  run's real cost forward through any later rescore. Caught while trying
+  to build exactly the cost-per-task table the brief wants — which is
+  itself evidence that table did not exist before this pass, another gap
+  the brief's own suggested format flagged that v1 didn't catch.
+
+- A .gitignore rule (`outputs/*`) written earlier in the project was broad
+  enough to silently exclude the ENTIRE trajectories deliverable from any
+  commit. This was fixed once already this session (before this pass) —
+  named again here because it is exactly the class of error a rushed final
+  push could reintroduce (a careless `outputs/` re-ignore, or a new output
+  type added without checking it against the exception rules), and because
+  it is the kind of bug that produces no error message: the deliverable
+  would simply not be there, silently, with everything else looking normal.
+
+====================================================================
+HOUSEKEEPING RE-CHECK
+====================================================================
+- .claude/ : clean, gitignored, verified.
+- data/repos/fairness_demographic_shift dead clone : removed, verified.
+- FINAL_REPORT.md ships (not gitignored) for all 3 phases : verified.
+- Confidence field : now has a documented reason it's excluded from scoring
+  (uncalibrated self-report) AND a real use (report ordering) — was pure
+  unexplained cruft in v1, now neither unused nor unexplained.
+
+====================================================================
 BOTTOM LINE
-------------------------------------------------------------------
-Nothing above is a fabrication or a stretch — every item traces to a real,
-checked file (or its absence) or a direct quote from the brief. Most of it
-is "not done yet, on a known plan" rather than "done wrong." The two items
-that would worry a genuinely strict judge most, independent of remaining
-time, are: (1) no human-approval gate yet for a tool that can publish
-reputationally-consequential claims about real people's real work (rules
-#4/#5), and (2) the live API key having been spoken in plaintext into this
-session at all (rule #8), regardless of the fact it's correctly kept out of
-git. Everything else is a matter of finishing the plan already on paper.
+====================================================================
+Every concrete, in-repo fault from v1 that could be fixed without
+fabricating something (a testimonial, a video, a verified credit balance)
+has been fixed, and fixed with evidence a judge can check, not just
+asserted. What's left breaks into three categories:
+
+1. Structurally unfixable by an AI assistant working alone: the video, key
+   rotation, confirming NIM's dashboard credit balance. These need a human.
+2. Honest, named, and left open rather than hidden: the human-approval gate
+   is a disclaimer not an enforced control; the eval set is 9 papers not
+   10+; 3 of 8 repos have no explicit license; Problem & User Value rests
+   on inferred rather than primary user research.
+3. Genuinely uncertain how a judge will read it either way: whether
+   stopping at 3 of 5 planned iterations reads as disciplined prioritization
+   or an unfinished plan is not something more code changes — it's a
+   framing judgment call that rests on how the video (still unrecorded)
+   explains it.
+
+If this were graded on the repo alone, right now, it would score well on
+5 of 6 criteria and be capped hard on Problem & User Value. Without the
+video, no amount of repo quality changes that it's an incomplete
+submission against a checklist that explicitly requires one.

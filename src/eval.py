@@ -19,6 +19,14 @@ GROUND_TRUTH_PATH = ROOT / "data" / "ground_truth.json"
 OUTPUTS_DIR = ROOT / "outputs"
 
 SEVERITY_WEIGHTS = {"high": 3, "medium": 2, "low": 1}
+# Every finding also carries a "confidence" (0-1, model self-report). It is
+# deliberately NOT used in scoring here: ground truth has no confidence
+# concept to compare against (a finding either matches an expected instance
+# or doesn't), and self-reported confidence is uncalibrated -- weighting
+# TP/FP by it would just be weighting by the model's own opinion of itself.
+# It IS used downstream, in scripts/generate_report.py, to order findings in
+# the human-readable report so the ones most worth a reviewer's time surface
+# first -- that's a legitimate presentation use, distinct from scoring.
 
 FAILURE_MODES = [
     "data_leakage_global_preprocessing",

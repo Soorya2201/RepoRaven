@@ -154,6 +154,8 @@ Note `NIM_MODEL_TOOLCALLING` is a separate variable on purpose: `nemotron-3-supe
 
 **One eval case is synthetic.** `synthetic_multi_defect` is a small script we wrote ourselves, clearly labeled `"synthetic": true`, covering the 3 failure modes no real public example could be found for. It is not a real paper and is never presented as one.
 
+**Licensing.** This project reads public GitHub repos and feeds excerpts to an LLM for read-only analysis; it never redistributes their code. Of the 8 real eval-set repos, 5 carry an explicit license (Apache 2.0 ×3, MIT ×1, CC BY-NC 4.0 ×1 — the last one non-commercial, consistent with this being a non-commercial hackathon evaluation); 3 have none. NVIDIA's free-tier API Catalog is explicitly positioned for research, prototyping, and hackathon use (not production), which is the use case here.
+
 ---
 
 ## 8. Verifying our claims yourself
