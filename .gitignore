@@ -15,3 +15,14 @@ outputs/*/*
 *.egg-info/
 .DS_Store
 .claude/
+
+# Working/prep material kept locally, not part of the submission: the
+# competition brief (organizer's material, not ours to redistribute), the
+# raw build instructions, internal scratch notes, our own self-audit, and
+# video prep notes. The polished, submission-facing versions of anything
+# useful from these live in README.md / REPRODUCTION.md / phases/*.md.
+instructions.md
+problem.md
+MICRO1_JUDGE_AUDIT.txt
+VIDEO.md
+micro1 - First Hackathon*.pdf
