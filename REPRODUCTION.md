@@ -103,12 +103,15 @@ Measured on the actual runs reported in `changelog.md` (9 papers each):
 ## 6. What output to expect
 
 ```
+outputs/<phase>/FINAL_REPORT.md     the actual deliverable -- polished, for the intended end user
 outputs/<phase>/_summary.txt        aggregate metrics + per-paper table (printed to stdout too)
 outputs/<phase>/_summary.json       same, machine-readable
-outputs/<phase>/<paper_id>.txt      human-readable audit report per paper
-outputs/<phase>/<paper_id>.json     findings + score + raw response + tool calls
+outputs/<phase>/<paper_id>.txt      developer-facing audit report per paper (debug artifact)
+outputs/<phase>/<paper_id>.json     findings + score + raw response + tool calls (debug artifact)
 outputs/trajectories/               one representative trajectory per phase
 ```
+
+`FINAL_REPORT.md` is what the intended user (a PC chair, 15 minutes) would actually read: findings sorted by severity/confidence, the paper quote and code citation for each, and the human-review disclaimer repeated per-paper. Generate it directly with `python scripts/generate_report.py <phase>`.
 
 A `_summary.txt` looks like:
 

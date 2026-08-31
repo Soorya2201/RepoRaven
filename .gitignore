@@ -2,11 +2,15 @@
 data/repos/
 __pycache__/
 *.pyc
-# Per-phase run artifacts are regenerable via scripts/run_all.py, so they're
-# not committed -- EXCEPT outputs/trajectories/, which is micro1 required
-# deliverable #4 and must ship with the submission.
-outputs/*
-!outputs/trajectories/
+# Per-phase run artifacts are regenerable via scripts/run_all.py, so raw
+# per-paper JSON/txt dev logs aren't committed. Two exceptions ship anyway:
+# outputs/trajectories/ (micro1 required deliverable #4) and each phase's
+# FINAL_REPORT.md (the human-readable report -- a real deliverable, not a
+# debug artifact, and judges shouldn't have to run the pipeline just to see
+# what the output looks like).
+outputs/*/*
+!outputs/*/FINAL_REPORT.md
+!outputs/trajectories/*
 .venv/
 *.egg-info/
 .DS_Store

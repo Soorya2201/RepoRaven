@@ -70,12 +70,18 @@ def main() -> int:
             failures.append(phase)
 
     _run([PYTHON, "scripts/export_trajectories.py"],
-         "STEP 3/3: Exporting agent trajectories")
+         "STEP 3/4: Exporting agent trajectories")
+
+    for phase in args.phases:
+        if (ROOT / "outputs" / phase / "_summary.json").exists():
+            _run([PYTHON, "scripts/generate_report.py", phase],
+                 f"STEP 4/4: Generating human-readable report for '{phase}'")
 
     print(f"\n{'=' * 70}\nDONE\n{'=' * 70}")
-    print("Per-phase results:  outputs/<phase>/_summary.txt")
-    print("Per-paper reports:  outputs/<phase>/<paper_id>.txt")
-    print("Agent trajectories: outputs/trajectories/")
+    print("Per-phase results:    outputs/<phase>/_summary.txt")
+    print("Human-readable report: outputs/<phase>/FINAL_REPORT.md")
+    print("Per-paper dev logs:   outputs/<phase>/<paper_id>.txt")
+    print("Agent trajectories:   outputs/trajectories/")
     if failures:
         print(f"\nWARNING: these phases reported a non-zero exit: {failures}", file=sys.stderr)
         return 1
