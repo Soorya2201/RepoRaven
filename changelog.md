@@ -1,4 +1,4 @@
-# RepoAudit Improvement Changelog
+# RepoRaven Improvement Changelog
 
 ## Phase 0 — Setup, eval set curation, ground truth
 
@@ -8,7 +8,7 @@
 
 **Decision:** kept, with one adjustment: built one clearly-labeled synthetic fixture (`synthetic_multi_defect`) rather than leaving 4 of 6 failure modes with zero ground-truth positives. This was a genuine build-time decision, not a fallback of convenience — see next line.
 
-**What this taught us:** the failure modes that are *easiest to find pre-documented* (via ReScience reports, GitHub issues) are not necessarily the ones that matter most for reproducibility risk — several genuinely serious bugs (G-Mixup's train/test leakage, Lottery Ticket Hypothesis's wrong optimizer *and* wrong learning rate) were sitting undiscussed in public repos with real published papers, found only by directly reading the code against the paper's claims. That's the strongest early argument for why a tool like RepoAudit is worth building: the bugs it's meant to catch are exactly the ones nobody files a GitHub issue about.
+**What this taught us:** the failure modes that are *easiest to find pre-documented* (via ReScience reports, GitHub issues) are not necessarily the ones that matter most for reproducibility risk — several genuinely serious bugs (G-Mixup's train/test leakage, Lottery Ticket Hypothesis's wrong optimizer *and* wrong learning rate) were sitting undiscussed in public repos with real published papers, found only by directly reading the code against the paper's claims. That's the strongest early argument for why a tool like RepoRaven is worth building: the bugs it's meant to catch are exactly the ones nobody files a GitHub issue about.
 
 ## Phase 0 (continued) — Sourcing eval papers from PaperBench instead of ad-hoc search
 

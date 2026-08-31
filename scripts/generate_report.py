@@ -120,7 +120,7 @@ def generate(phase: str, only_paper: str | None = None) -> Path:
     paper_ids = [only_paper] if only_paper else list(ground_truth.keys())
 
     header = [
-        f"# RepoAudit Report — {phase}",
+        f"# RepoRaven Report — {phase}",
         "",
         "**Findings are advisory triage, not adjudication.** This system is measurably "
         f"imperfect (precision {summary['micro_avg']['precision']:.0%} on our own eval set — "

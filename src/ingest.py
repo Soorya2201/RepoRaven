@@ -23,7 +23,7 @@ SKIP_DIR_NAMES = {".git", "__pycache__", "node_modules", ".venv", "venv", ".eggs
 def _fetch_arxiv_html(arxiv_id: str) -> str | None:
     url = f"https://arxiv.org/html/{arxiv_id}"
     try:
-        resp = requests.get(url, timeout=30, headers={"User-Agent": "RepoAudit/0.1"})
+        resp = requests.get(url, timeout=30, headers={"User-Agent": "RepoRaven/0.1"})
         if resp.status_code == 200 and len(resp.text) > 500:
             return resp.text
     except requests.RequestException:

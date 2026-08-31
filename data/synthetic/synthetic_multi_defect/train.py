@@ -1,6 +1,6 @@
 """Synthetic training script — deliberately contains 3 planted bugs.
 
-See README.md: this fixture is constructed by RepoAudit for eval coverage,
+See README.md: this fixture is constructed by RepoRaven for eval coverage,
 not a real paper's code. Each bug below is cited by exact line number in
 data/ground_truth.json.
 

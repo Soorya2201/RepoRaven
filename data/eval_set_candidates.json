@@ -67,7 +67,7 @@
     "paper_id": "synthetic_multi_defect",
     "arxiv_id": null,
     "title": "[SYNTHETIC FIXTURE] Not a real paper",
-    "repo_url": "local:data/synthetic/synthetic_multi_defect (constructed by RepoAudit, no external URL)",
+    "repo_url": "local:data/synthetic/synthetic_multi_defect (constructed by RepoRaven, no external URL)",
     "category": "A",
     "synthetic": true,
     "issue_source": "Constructed by us, not found in the wild. Originally planted 4 bugs (single_seed_reporting, metric_misimplementation, test_set_contamination, eval_on_train) after research passes found zero citable real-world examples for any of them. single_seed_reporting was later retired and the code fixed once real instances were found by hand in lbcs and sample_specific_masks (both sourced from PaperBench's paper list). Now covers the 3 modes (metric_misimplementation, test_set_contamination, eval_on_train) that still have no real-world instance in this eval set."

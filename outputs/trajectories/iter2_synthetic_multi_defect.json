@@ -2,7 +2,7 @@
   "phase": "iter2",
   "paper_id": "synthetic_multi_defect",
   "paper_title": "[SYNTHETIC FIXTURE] Not a real paper",
-  "repo_url": "local:data/synthetic/synthetic_multi_defect (constructed by RepoAudit, no external URL)",
+  "repo_url": "local:data/synthetic/synthetic_multi_defect (constructed by RepoRaven, no external URL)",
   "repo_commit": "n/a (not a git repo -- constructed directly, no version history)",
   "agent_instructions": [
     {

@@ -1,4 +1,4 @@
-# RepoAudit Report — iter1
+# RepoRaven Report — iter1
 
 **Findings are advisory triage, not adjudication.** This system is measurably imperfect (precision 75% on our own eval set — roughly 1 in 4-5 findings is wrong). Every finding below cites an exact file:line and the paper sentence it's checked against, so you can verify it in under a minute. **Do not forward any finding to an author, editor, or committee without checking the citation yourself first.** Full context: README.md.
 
@@ -158,7 +158,7 @@ The code loads the CIFAR-10 training data from 5 predefined batches (data_batch_
 ## [SYNTHETIC FIXTURE] Not a real paper
 
 **Paper:** synthetic fixture, not a real paper  
-**Repo:** local:data/synthetic/synthetic_multi_defect (constructed by RepoAudit, no external URL)
+**Repo:** local:data/synthetic/synthetic_multi_defect (constructed by RepoRaven, no external URL)
 
 **3 findings**, ordered by how much they're worth your time:
 

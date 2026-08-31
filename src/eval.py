@@ -122,7 +122,7 @@ def score_findings(predicted: list, ground_truth: list) -> dict:
 def _write_report_txt(path: Path, paper_id: str, gt_entry: dict, predicted: list, score: dict, phase_name: str) -> None:
     lines = []
     lines.append("=" * 65)
-    lines.append(f"RepoAudit Report — {paper_id}")
+    lines.append(f"RepoRaven Report — {paper_id}")
     lines.append(f"Paper: {gt_entry.get('title', 'UNKNOWN')}")
     lines.append(f"arXiv: {gt_entry.get('arxiv_id')}   Repo: {gt_entry.get('repo_url')} @ {gt_entry.get('repo_commit')}")
     lines.append(f"Phase: {phase_name}")
@@ -254,7 +254,7 @@ def run_phase(phase_name: str, agent_fn) -> dict:
     table_str = tabulate(table_rows, headers=["paper_id", "n_expected", "n_predicted", "TP", "FP", "FN", "F1"])
 
     summary_txt = [
-        f"RepoAudit — Phase: {phase_name}",
+        f"RepoRaven — Phase: {phase_name}",
         f"Model (primary/fast): {summary['model_primary']} / {summary['model_fast']}",
         f"Papers: {summary['n_papers']}   Wall clock: {summary['wall_clock_seconds']}s",
         f"Token usage: {usage}",

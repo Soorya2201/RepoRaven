@@ -1,4 +1,4 @@
-"""One-command reproduction of every RepoAudit phase (micro1 deliverable #2).
+"""One-command reproduction of every RepoRaven phase (micro1 deliverable #2).
 
 Usage:
     python scripts/run_all.py                  # fetch data + run all phases + export trajectories
@@ -34,7 +34,7 @@ def _run(cmd: list[str], label: str) -> bool:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Reproduce all RepoAudit phases end to end.")
+    parser = argparse.ArgumentParser(description="Reproduce all RepoRaven phases end to end.")
     parser.add_argument("--phases", nargs="+", default=ALL_PHASES,
                         help=f"Which phases to run (default: all of {ALL_PHASES}).")
     parser.add_argument("--skip-fetch", action="store_true",

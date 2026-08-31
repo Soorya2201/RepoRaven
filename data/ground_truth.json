@@ -145,7 +145,7 @@
   "synthetic_multi_defect": {
     "arxiv_id": null,
     "title": "[SYNTHETIC FIXTURE] Not a real paper",
-    "repo_url": "local:data/synthetic/synthetic_multi_defect (constructed by RepoAudit, no external URL)",
+    "repo_url": "local:data/synthetic/synthetic_multi_defect (constructed by RepoRaven, no external URL)",
     "repo_commit": "n/a (not a git repo -- constructed directly, no version history)",
     "paper_source": "html",
     "category": "A",

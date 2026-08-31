@@ -1,6 +1,6 @@
 # Synthetic Multi-Defect Fixture
 
-**This is not a real paper or repository.** It was constructed by the RepoAudit
+**This is not a real paper or repository.** It was constructed by the RepoRaven
 project itself (not scraped, not from a real author) to provide ground-truth
 positive test cases for failure modes that a time-boxed search of public
 papers + ReScience C reports + GitHub issues could not source real citable
