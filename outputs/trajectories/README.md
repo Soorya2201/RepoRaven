@@ -21,22 +21,42 @@ Each file contains:
 steps showing the tool-using verifier reading `mnist_fc/constants.py`,
 grepping the whole repo, and reasoning across the results.
 
-## Known limitation: baseline and iter1 trajectories are abbreviated
+## `baseline` is genuinely 1 step — that's the real architecture, not missing data
+
+Phase 1 is architecturally a single LLM call (paper + repo dumped in, one
+prompt, one response) — `baseline_g_mixup.json` shows the real system
+prompt and the real final output, which is the whole trajectory there is.
+This file was regenerated from a full re-run made specifically to get
+complete data (see below); it is not abbreviated.
+
+That re-run is also a real, useful data point on its own: it scored F1
+0.182 on the same 9 papers that scored 0.320 in the run `changelog.md` and
+`phase_1_baseline.md` are built around — hitting a `ReadTimeout`, a
+transient HTTP 503, and the same JSON-formatting bug documented as Phase
+1's central finding, just distributed across different papers this time.
+**We deliberately did not overwrite the reported 0.320** with this number:
+that original run is the one whose specific errors are traced in detail in
+`phase_1_baseline.md`, and swapping in a different run's score after the
+fact — especially one close enough to change whether Phase 3 (0.273) reads
+as above or below the baseline — is exactly the kind of quiet edit that
+erodes trust in the rest of the numbers. Instead, both are reported
+honestly: **0.182–0.320 F1 across two independent runs**, which is itself
+concrete evidence for Phase 1's own conclusion that the baseline's
+dominant failure mode is unreliability, not reasoning quality.
+
+## Known limitation: `iter1` (Phase 2) trajectory is abbreviated
 
 `raw_response`, `claims`, and `tool_calls_made` capture was added to
-`src/eval.py` during Phase 3. The Phase 1 and Phase 2 runs completed **before**
-that instrumentation existed, so their saved records contain findings and
-scores but not the full intermediate detail. Their trajectory files therefore
-show fewer steps than `iter2`'s.
+`src/eval.py` during Phase 3. The Phase 2 run completed **before** that
+instrumentation existed, so its saved record contains findings and scores
+but not the full intermediate detail — `iter1_g_mixup.json` shows fewer
+steps than `iter2`'s.
 
 This is a gap in *presentation fidelity only* — it does not affect any
 reported metric, since scoring only ever used the findings, which are fully
-recorded. Re-running Phase 2 purely to regenerate its trajectory would have
-cost ~400k tokens on the final day and risked shifting the numbers reported
-throughout the changelog (these models are not bit-for-bit deterministic even
-at `temperature=0`; see `REPRODUCTION.md` §7). We judged an honest note more
-valuable than the churn.
-
-The full agent instructions for all phases *are* captured in every file,
-including the abbreviated ones — so the "instructions that shape each agent"
-requirement is met for all three phases regardless.
+recorded. Re-running Phase 2 purely to regenerate its trajectory would cost
+~400k tokens on the final day and risks the same score-drift problem
+described above, on our *best* phase this time. We judged an honest note
+more valuable than that risk. The full agent instructions for all three
+phases *are* captured in every file regardless, including this one — so the
+"instructions that shape each agent" requirement is met throughout.

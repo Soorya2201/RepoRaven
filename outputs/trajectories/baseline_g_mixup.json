@@ -1,0 +1,164 @@
+{
+  "phase": "baseline",
+  "paper_id": "g_mixup",
+  "paper_title": "G-Mixup: Graph Data Augmentation for Graph Classification",
+  "repo_url": "https://github.com/ahxt/g-mixup",
+  "repo_commit": "0813bb32319abbfb29fe82b9ee0c353a6862a1ad",
+  "agent_instructions": [
+    {
+      "agent": "baseline (single node)",
+      "model_role": "NIM_MODEL_PRIMARY",
+      "instructions": "You are auditing an ML research paper and its code repository for reproducibility issues. Read the paper and the code below. Return a JSON list of findings. Each finding must have: `failure_mode` (one of: data_leakage_global_preprocessing, hyperparam_drift, single_seed_reporting, metric_misimplementation, test_set_contamination, eval_on_train, other), `severity` (high/medium/low), `paper_evidence` (short quote or section reference), `code_evidence` (file:line or file), `explanation` (1-2 sentences). Return `[]` if you find nothing. Return only the JSON, no prose."
+    }
+  ],
+  "trajectory": [
+    {
+      "step": 1,
+      "agent": "verifier",
+      "action": "Produced final findings",
+      "result": [
+        {
+          "failure_mode": "other",
+          "severity": "medium",
+          "paper_evidence": "Appendix F.1: ... we report the test accuracy on ten runs.",
+          "code_evidence": "src/gmixup.py: torch.manual_seed(seed); random.seed(seed)",
+          "explanation": "The paper reports results averaged over ten runs, but the code only executes a single run per invocation. To reproduce the paper's results, the user must run the code ten times with different seeds and average the results."
+        },
+        {
+          "failure_mode": "other",
+          "severity": "high",
+          "paper_evidence": "Appendix F.1: Note that best test epoch is selected on a validation set, and we report the test accuracy on ten runs.",
+          "code_evidence": "src/gmixup.py: absence of validation loop during training (only training loss is computed and optimizer stepped)",
+          "explanation": "The paper states that the best epoch is selected using the validation set, but the provided code does not evaluate on the validation set during training to pick the best model. Instead, it trains for a fixed number of epochs and evaluates on the test set at the last epoch, which may lead to overfitting and inflated test performance."
+        }
+      ],
+      "retries_and_checkpoints": "none -- clean first-pass parse"
+    }
+  ],
+  "final_findings": [
+    {
+      "failure_mode": "other",
+      "severity": "medium",
+      "paper_evidence": "Appendix F.1: ... we report the test accuracy on ten runs.",
+      "code_evidence": "src/gmixup.py: torch.manual_seed(seed); random.seed(seed)",
+      "explanation": "The paper reports results averaged over ten runs, but the code only executes a single run per invocation. To reproduce the paper's results, the user must run the code ten times with different seeds and average the results."
+    },
+    {
+      "failure_mode": "other",
+      "severity": "high",
+      "paper_evidence": "Appendix F.1: Note that best test epoch is selected on a validation set, and we report the test accuracy on ten runs.",
+      "code_evidence": "src/gmixup.py: absence of validation loop during training (only training loss is computed and optimizer stepped)",
+      "explanation": "The paper states that the best epoch is selected using the validation set, but the provided code does not evaluate on the validation set during training to pick the best model. Instead, it trains for a fixed number of epochs and evaluates on the test set at the last epoch, which may lead to overfitting and inflated test performance."
+    }
+  ],
+  "ground_truth_expected": [
+    {
+      "failure_mode": "data_leakage_global_preprocessing",
+      "severity": "high",
+      "paper_evidence": "Paper section 4 (Experiments): \"We split the dataset into train/val/test data by 7:1:2.\" The split is presented as the sole boundary between train and evaluation data; no mention that any feature statistic is computed before this split.",
+      "code_evidence": "src/gmixup.py:32-49 (prepare_dataset_x), called at src/gmixup.py:242",
+      "explanation": "prepare_dataset_x() (def at line 32) computes `mean, std = deg.mean().item(), deg.std().item()` at line 49 over node-degree features of the FULL dataset object -- which at the call site (line 242) is `dataset = new_graph + dataset` (line 237), i.e. augmented-train + val + test all concatenated. These global mean/std are then used to standardize every graph's node features (`data.x = (degs - mean) / std`) BEFORE the train/val/test split is sliced out at lines 250-253. Test-set (and val-set) statistics leak into the features every split sees. This path only executes when `max_degree >= 2000` (dataset-dependent), but the pattern is present in the shipped code exactly as described.",
+      "confidence": 0.9
+    },
+    {
+      "failure_mode": "hyperparam_drift",
+      "severity": "low",
+      "paper_evidence": "Paper section 4 (Experiments): \"The initial learning rate is 0.01 and will drop the learning rate by half every 100 epochs. The batch size is set to 128.\"",
+      "code_evidence": "src/gmixup.py:128",
+      "explanation": "argparse default for --batch_size is 32 (src/gmixup.py:128: `parser.add_argument('--batch_size', type=int, default=32)`), contradicting the paper's stated batch size of 128. Severity kept LOW rather than HIGH because the repo's own documented entry points (run_gmixup.sh, run_vanilla.sh, referenced by README.md section 4) explicitly pass `--batch_size 128`, so the officially-documented reproduction path is unaffected -- only a bare `python src/gmixup.py` invocation would silently use the wrong value.",
+      "confidence": 0.75
+    },
+    {
+      "failure_mode": "hyperparam_drift",
+      "severity": "high",
+      "paper_evidence": "we generate 20% more graph for training graph.",
+      "code_evidence": "src/gmixup.py:133, run_gmixup.sh:5",
+      "explanation": "argparse default for --aug_ratio is 0.15 (src/gmixup.py:133), and unlike --batch_size, the shipped run_gmixup.sh script does NOT correct this -- it explicitly passes `--aug_ratio 0.15` (line 5), contradicting the paper's claimed 20%. Severity HIGH (not mitigated like the batch_size finding) because the official, documented reproduction path itself uses the wrong value. Found by the Phase 2 iter1 agent (on a retry after a transient 503 from NVIDIA's API on the first attempt), independently verified by us against both the code and the shell script.",
+      "confidence": 0.9
+    },
+    {
+      "failure_mode": "hyperparam_drift",
+      "severity": "high",
+      "paper_evidence": "\u03bb \u2208 [ 0.1 , 0.2 ]",
+      "code_evidence": "src/gmixup.py:132",
+      "explanation": "argparse default for --lam_range is \"[0.005, 0.01]\" (src/gmixup.py:132: `parser.add_argument('--lam_range', type=str, default=\"[0.005, 0.01]\")`), a 10-20x difference from the paper's stated range [0.1, 0.2]. run_gmixup.sh does not override --lam_range at all, so the official reproduction path also uses the wrong range. Found by the Phase 2 iter1 agent, independently verified.",
+      "confidence": 0.9
+    },
+    {
+      "failure_mode": "single_seed_reporting",
+      "severity": "medium",
+      "paper_evidence": "we report the test accuracy on ten runs.",
+      "code_evidence": "run_gmixup.sh:2",
+      "explanation": "run_gmixup.sh:2 loops `for seed in 1314 11314 21314 31314 41314 51314 61314 71314` -- exactly 8 seed values, not the ten runs the paper claims. This is a more precise version of a claim Phase 2's agent also raised (and we rejected as wrong): Phase 2 said NO seed loop existed at all, which was factually false (Phase 2 couldn't see run_gmixup.sh at all, a .py-only context limitation). Phase 3's tool-calling agent used GrepRepo with glob='*' (not just *.py), actually found the real loop, AND caught that its count (8) doesn't match the paper's claimed count (10) -- a genuinely new, more precise finding neither our Phase 0 hand-annotation nor Phase 2 caught. Severity kept MEDIUM (not HIGH) since a working multi-seed mechanism does exist, just undercounted by 2, unlike single_seed_reporting cases elsewhere in this eval set where no mechanism exists at all.",
+      "confidence": 0.85
+    }
+  ],
+  "score_vs_ground_truth": {
+    "tp": 0,
+    "fp": 2,
+    "fn": 5,
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1": 0.0,
+    "severity_weighted_precision": 0.0,
+    "unmatched_gt": [
+      {
+        "failure_mode": "data_leakage_global_preprocessing",
+        "severity": "high",
+        "paper_evidence": "Paper section 4 (Experiments): \"We split the dataset into train/val/test data by 7:1:2.\" The split is presented as the sole boundary between train and evaluation data; no mention that any feature statistic is computed before this split.",
+        "code_evidence": "src/gmixup.py:32-49 (prepare_dataset_x), called at src/gmixup.py:242",
+        "explanation": "prepare_dataset_x() (def at line 32) computes `mean, std = deg.mean().item(), deg.std().item()` at line 49 over node-degree features of the FULL dataset object -- which at the call site (line 242) is `dataset = new_graph + dataset` (line 237), i.e. augmented-train + val + test all concatenated. These global mean/std are then used to standardize every graph's node features (`data.x = (degs - mean) / std`) BEFORE the train/val/test split is sliced out at lines 250-253. Test-set (and val-set) statistics leak into the features every split sees. This path only executes when `max_degree >= 2000` (dataset-dependent), but the pattern is present in the shipped code exactly as described.",
+        "confidence": 0.9
+      },
+      {
+        "failure_mode": "hyperparam_drift",
+        "severity": "low",
+        "paper_evidence": "Paper section 4 (Experiments): \"The initial learning rate is 0.01 and will drop the learning rate by half every 100 epochs. The batch size is set to 128.\"",
+        "code_evidence": "src/gmixup.py:128",
+        "explanation": "argparse default for --batch_size is 32 (src/gmixup.py:128: `parser.add_argument('--batch_size', type=int, default=32)`), contradicting the paper's stated batch size of 128. Severity kept LOW rather than HIGH because the repo's own documented entry points (run_gmixup.sh, run_vanilla.sh, referenced by README.md section 4) explicitly pass `--batch_size 128`, so the officially-documented reproduction path is unaffected -- only a bare `python src/gmixup.py` invocation would silently use the wrong value.",
+        "confidence": 0.75
+      },
+      {
+        "failure_mode": "hyperparam_drift",
+        "severity": "high",
+        "paper_evidence": "we generate 20% more graph for training graph.",
+        "code_evidence": "src/gmixup.py:133, run_gmixup.sh:5",
+        "explanation": "argparse default for --aug_ratio is 0.15 (src/gmixup.py:133), and unlike --batch_size, the shipped run_gmixup.sh script does NOT correct this -- it explicitly passes `--aug_ratio 0.15` (line 5), contradicting the paper's claimed 20%. Severity HIGH (not mitigated like the batch_size finding) because the official, documented reproduction path itself uses the wrong value. Found by the Phase 2 iter1 agent (on a retry after a transient 503 from NVIDIA's API on the first attempt), independently verified by us against both the code and the shell script.",
+        "confidence": 0.9
+      },
+      {
+        "failure_mode": "hyperparam_drift",
+        "severity": "high",
+        "paper_evidence": "\u03bb \u2208 [ 0.1 , 0.2 ]",
+        "code_evidence": "src/gmixup.py:132",
+        "explanation": "argparse default for --lam_range is \"[0.005, 0.01]\" (src/gmixup.py:132: `parser.add_argument('--lam_range', type=str, default=\"[0.005, 0.01]\")`), a 10-20x difference from the paper's stated range [0.1, 0.2]. run_gmixup.sh does not override --lam_range at all, so the official reproduction path also uses the wrong range. Found by the Phase 2 iter1 agent, independently verified.",
+        "confidence": 0.9
+      },
+      {
+        "failure_mode": "single_seed_reporting",
+        "severity": "medium",
+        "paper_evidence": "we report the test accuracy on ten runs.",
+        "code_evidence": "run_gmixup.sh:2",
+        "explanation": "run_gmixup.sh:2 loops `for seed in 1314 11314 21314 31314 41314 51314 61314 71314` -- exactly 8 seed values, not the ten runs the paper claims. This is a more precise version of a claim Phase 2's agent also raised (and we rejected as wrong): Phase 2 said NO seed loop existed at all, which was factually false (Phase 2 couldn't see run_gmixup.sh at all, a .py-only context limitation). Phase 3's tool-calling agent used GrepRepo with glob='*' (not just *.py), actually found the real loop, AND caught that its count (8) doesn't match the paper's claimed count (10) -- a genuinely new, more precise finding neither our Phase 0 hand-annotation nor Phase 2 caught. Severity kept MEDIUM (not HIGH) since a working multi-seed mechanism does exist, just undercounted by 2, unlike single_seed_reporting cases elsewhere in this eval set where no mechanism exists at all.",
+        "confidence": 0.85
+      }
+    ],
+    "unmatched_pred": [
+      {
+        "failure_mode": "other",
+        "severity": "medium",
+        "paper_evidence": "Appendix F.1: ... we report the test accuracy on ten runs.",
+        "code_evidence": "src/gmixup.py: torch.manual_seed(seed); random.seed(seed)",
+        "explanation": "The paper reports results averaged over ten runs, but the code only executes a single run per invocation. To reproduce the paper's results, the user must run the code ten times with different seeds and average the results."
+      },
+      {
+        "failure_mode": "other",
+        "severity": "high",
+        "paper_evidence": "Appendix F.1: Note that best test epoch is selected on a validation set, and we report the test accuracy on ten runs.",
+        "code_evidence": "src/gmixup.py: absence of validation loop during training (only training loss is computed and optimizer stepped)",
+        "explanation": "The paper states that the best epoch is selected using the validation set, but the provided code does not evaluate on the validation set during training to pick the best model. Instead, it trains for a fixed number of epochs and evaluates on the test set at the last epoch, which may lead to overfitting and inflated test performance."
+      }
+    ]
+  },
+  "notes": "Recorded from a real eval run (src/eval.py), not reconstructed. 'retries_and_checkpoints' surfaces any JSON-repair pass, extraction retry, or ungrounded-finding rejection that occurred -- these are the automatic checkpoints described in the phase writeups."
+}
