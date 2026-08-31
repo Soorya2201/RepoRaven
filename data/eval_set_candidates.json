@@ -1,0 +1,75 @@
+[
+  {
+    "paper_id": "proto2proto",
+    "arxiv_id": "2204.11830",
+    "title": "Proto2Proto: Can you recognize the car, the way I do?",
+    "repo_url": "https://github.com/archmaester/proto2proto",
+    "category": "A",
+    "issue_source": "ReScience C [¬Re] Reproducibility study of 'Proto2Proto' (Bikker, de Kleuver, Hu, Veenman; ReScience C v9n2, 2023; DOI 10.5281/zenodo.8173705) — marked NOT REPRODUCED. Cited reasons: code for a required visualization was not released by original authors; authors did not respond to requests for trained weights / missing hyperparameter values."
+  },
+  {
+    "paper_id": "g_mixup",
+    "arxiv_id": "2202.07179",
+    "title": "G-Mixup: Graph Data Augmentation for Graph Classification",
+    "repo_url": "https://github.com/ahxt/g-mixup",
+    "category": "A",
+    "issue_source": "ReScience C [¬Re] report by Cordaro, Cox, Ren & Yu (DOI 10.5281/zenodo.8173737) — not reproduced (no significant improvement over baselines found). Independently code-verified by us: src/gmixup.py prepare_dataset_x() (def at line 32) computes mean/std of node-degree features over the FULL dataset (train+val+test, post-augmentation concat at line 237) at line 49, before the train/val/test split at lines 250-253. This is a genuine data_leakage_global_preprocessing instance, confirmed by direct code reading, independent of the ReScience verdict."
+  },
+  {
+    "paper_id": "network_deconvolution",
+    "arxiv_id": "1905.11926",
+    "title": "Network Deconvolution",
+    "repo_url": "https://github.com/yechengxi/deconvolution",
+    "category": "B",
+    "issue_source": "ReScience C [Re] Network Deconvolution — marked REPRODUCED. Annotated as clean (expected_findings: [])."
+  },
+  {
+    "paper_id": "birt_continual_learning",
+    "arxiv_id": "2305.04769",
+    "title": "BiRT: Bio-inspired Replay in Vision Transformers for Continual Learning",
+    "repo_url": "https://github.com/NeurAI-Lab/BiRT",
+    "category": "B",
+    "issue_source": "ReScience C [Re] Bio-inspired replay for transformers in Continual Learning — marked REPRODUCED. Annotated as clean (expected_findings: [])."
+  },
+  {
+    "paper_id": "cifar_10_100n",
+    "arxiv_id": "2110.12088",
+    "title": "Learning with Noisy Labels Revisited: A Study Using Real-World Human Annotations",
+    "repo_url": "https://github.com/UCSC-REAL/cifar-10-100n",
+    "category": "B",
+    "issue_source": "ReScience C 'Learning with Noisy Labels [Re]visited' (v11n1, 2026) — listed as REPRODUCED. A second, newer ReScience report (Hudovernik 2026, DOI 10.5281/zenodo.18401497) marks the same paper only PARTIALLY reproduced — flagged honestly, both cited. Annotated as clean per our own code audit (expected_findings: []); general reproducibility and our 6-mode taxonomy are separate questions."
+  },
+  {
+    "paper_id": "lottery_ticket_hypothesis",
+    "arxiv_id": "1803.03635",
+    "title": "The Lottery Ticket Hypothesis: Finding Sparse, Trainable Neural Networks",
+    "repo_url": "https://github.com/google-research/lottery-ticket-hypothesis",
+    "category": "A",
+    "issue_source": "GitHub issue #15 (\"The learning rate is different from the paper in iclr 2019\") + independently code-verified by us: paper states (arXiv HTML, appendix table) \"Optimizer Adam 1.2e-3\" / \"trained with Adam at a learning rate of 0.0012\" for the Lenet-300-100/MNIST experiment. Code at mnist_fc/constants.py:32 sets OPTIMIZER_FN = functools.partial(tf.train.GradientDescentOptimizer, .1) — wrong optimizer (SGD not Adam) AND wrong LR (0.1 vs 0.0012)."
+  },
+  {
+    "paper_id": "lbcs",
+    "arxiv_id": "2311.08675",
+    "title": "Refined Coreset Selection: Towards Minimal Coreset Size under Model Performance Constraints",
+    "repo_url": "https://github.com/xiaoboxia/LBCS",
+    "category": "A",
+    "issue_source": "Sourced from PaperBench's (arXiv 2504.01848) official ICML 2024 paper list (not ReScience/ad-hoc search). Independently code-verified by us: paper claims 20-repeat mean+/-std reporting (Table 1/2); code (run_cifar.py, run_svhn.py, run_fashion.py) hardcodes one fixed seed each with no --seed CLI flag and no repeat/aggregation mechanism anywhere in the repo."
+  },
+  {
+    "paper_id": "sample_specific_masks",
+    "arxiv_id": "2406.03150",
+    "title": "Sample-specific Masks for Visual Reprogramming",
+    "repo_url": "https://github.com/tmlr-group/SMM",
+    "category": "A",
+    "issue_source": "Sourced from PaperBench's (arXiv 2504.01848) official ICML 2024 paper list (not ReScience/ad-hoc search). Independently code-verified by us: paper claims averaging over 3 seeds; every documented README command fixes --seed 0, no multi-seed script exists despite --seed being a real CLI flag."
+  },
+  {
+    "paper_id": "synthetic_multi_defect",
+    "arxiv_id": null,
+    "title": "[SYNTHETIC FIXTURE] Not a real paper",
+    "repo_url": "local:data/synthetic/synthetic_multi_defect (constructed by RepoAudit, no external URL)",
+    "category": "A",
+    "synthetic": true,
+    "issue_source": "Constructed by us, not found in the wild. Originally planted 4 bugs (single_seed_reporting, metric_misimplementation, test_set_contamination, eval_on_train) after research passes found zero citable real-world examples for any of them. single_seed_reporting was later retired and the code fixed once real instances were found by hand in lbcs and sample_specific_masks (both sourced from PaperBench's paper list). Now covers the 3 modes (metric_misimplementation, test_set_contamination, eval_on_train) that still have no real-world instance in this eval set."
+  }
+]

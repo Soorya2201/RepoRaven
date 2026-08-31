@@ -1,0 +1,219 @@
+{
+  "proto2proto": {
+    "arxiv_id": "2204.11830",
+    "title": "Proto2Proto: Can you recognize the car, the way I do?",
+    "repo_url": "https://github.com/archmaester/proto2proto",
+    "repo_commit": "2fdc4fb29dccadb6f3d65b7e4444c06fa3270ae1",
+    "paper_source": "html",
+    "category": "A",
+    "expected_findings": [],
+    "annotation_note": "ReScience C [¬Re] (Bikker, de Kleuver, Hu, Veenman; DOI 10.5281/zenodo.8173705) marked this NOT REPRODUCED, which is why it was sourced as a category-A candidate. However, direct code audit found NO instance of our 6 failure modes: normalization uses fixed ImageNet constants (src/dataset_loader/cars.py, cub.py), not fit on data (no leakage); evaluate loop (src/services/_evaluate/protopnet_evaluate.py) correctly iterates test_loader only; paper (2204.11830) makes no mean±std/multi-seed claims to check single_seed_reporting against; seed is set once via main.py:24-30 consistent with a single documented run. The ReScience non-reproduction was about undisclosed visualization code and unreleased trained weights -- unrelated to our taxonomy. Kept in the eval set as a deliberate near-miss / negative control: tests whether the agent over-triggers false positives on a paper that IS documented as broken, just not for reasons in-scope for this tool."
+  },
+  "g_mixup": {
+    "arxiv_id": "2202.07179",
+    "title": "G-Mixup: Graph Data Augmentation for Graph Classification",
+    "repo_url": "https://github.com/ahxt/g-mixup",
+    "repo_commit": "0813bb32319abbfb29fe82b9ee0c353a6862a1ad",
+    "paper_source": "html",
+    "category": "A",
+    "expected_findings": [
+      {
+        "failure_mode": "data_leakage_global_preprocessing",
+        "severity": "high",
+        "paper_evidence": "Paper section 4 (Experiments): \"We split the dataset into train/val/test data by 7:1:2.\" The split is presented as the sole boundary between train and evaluation data; no mention that any feature statistic is computed before this split.",
+        "code_evidence": "src/gmixup.py:32-49 (prepare_dataset_x), called at src/gmixup.py:242",
+        "explanation": "prepare_dataset_x() (def at line 32) computes `mean, std = deg.mean().item(), deg.std().item()` at line 49 over node-degree features of the FULL dataset object -- which at the call site (line 242) is `dataset = new_graph + dataset` (line 237), i.e. augmented-train + val + test all concatenated. These global mean/std are then used to standardize every graph's node features (`data.x = (degs - mean) / std`) BEFORE the train/val/test split is sliced out at lines 250-253. Test-set (and val-set) statistics leak into the features every split sees. This path only executes when `max_degree >= 2000` (dataset-dependent), but the pattern is present in the shipped code exactly as described.",
+        "confidence": 0.9
+      },
+      {
+        "failure_mode": "hyperparam_drift",
+        "severity": "low",
+        "paper_evidence": "Paper section 4 (Experiments): \"The initial learning rate is 0.01 and will drop the learning rate by half every 100 epochs. The batch size is set to 128.\"",
+        "code_evidence": "src/gmixup.py:128",
+        "explanation": "argparse default for --batch_size is 32 (src/gmixup.py:128: `parser.add_argument('--batch_size', type=int, default=32)`), contradicting the paper's stated batch size of 128. Severity kept LOW rather than HIGH because the repo's own documented entry points (run_gmixup.sh, run_vanilla.sh, referenced by README.md section 4) explicitly pass `--batch_size 128`, so the officially-documented reproduction path is unaffected -- only a bare `python src/gmixup.py` invocation would silently use the wrong value.",
+        "confidence": 0.75
+      },
+      {
+        "failure_mode": "hyperparam_drift",
+        "severity": "high",
+        "paper_evidence": "we generate 20% more graph for training graph.",
+        "code_evidence": "src/gmixup.py:133, run_gmixup.sh:5",
+        "explanation": "argparse default for --aug_ratio is 0.15 (src/gmixup.py:133), and unlike --batch_size, the shipped run_gmixup.sh script does NOT correct this -- it explicitly passes `--aug_ratio 0.15` (line 5), contradicting the paper's claimed 20%. Severity HIGH (not mitigated like the batch_size finding) because the official, documented reproduction path itself uses the wrong value. Found by the Phase 2 iter1 agent (on a retry after a transient 503 from NVIDIA's API on the first attempt), independently verified by us against both the code and the shell script.",
+        "confidence": 0.9
+      },
+      {
+        "failure_mode": "hyperparam_drift",
+        "severity": "high",
+        "paper_evidence": "λ ∈ [ 0.1 , 0.2 ]",
+        "code_evidence": "src/gmixup.py:132",
+        "explanation": "argparse default for --lam_range is \"[0.005, 0.01]\" (src/gmixup.py:132: `parser.add_argument('--lam_range', type=str, default=\"[0.005, 0.01]\")`), a 10-20x difference from the paper's stated range [0.1, 0.2]. run_gmixup.sh does not override --lam_range at all, so the official reproduction path also uses the wrong range. Found by the Phase 2 iter1 agent, independently verified.",
+        "confidence": 0.9
+      },
+      {
+        "failure_mode": "single_seed_reporting",
+        "severity": "medium",
+        "paper_evidence": "we report the test accuracy on ten runs.",
+        "code_evidence": "run_gmixup.sh:2",
+        "explanation": "run_gmixup.sh:2 loops `for seed in 1314 11314 21314 31314 41314 51314 61314 71314` -- exactly 8 seed values, not the ten runs the paper claims. This is a more precise version of a claim Phase 2's agent also raised (and we rejected as wrong): Phase 2 said NO seed loop existed at all, which was factually false (Phase 2 couldn't see run_gmixup.sh at all, a .py-only context limitation). Phase 3's tool-calling agent used GrepRepo with glob='*' (not just *.py), actually found the real loop, AND caught that its count (8) doesn't match the paper's claimed count (10) -- a genuinely new, more precise finding neither our Phase 0 hand-annotation nor Phase 2 caught. Severity kept MEDIUM (not HIGH) since a working multi-seed mechanism does exist, just undercounted by 2, unlike single_seed_reporting cases elsewhere in this eval set where no mechanism exists at all.",
+        "confidence": 0.85
+      }
+    ],
+    "annotation_note": "Three additional findings beyond the original leakage+batch_size pair were found across Phase 2 and Phase 3, none in our original Phase 0 hand-annotation (which checked batch_size and the leakage pattern but didn't cross-check every numeric/count claim against the paper). aug_ratio and lam_range (Phase 2, retry run) independently verified against the live code and run_gmixup.sh. The seed-count finding (Phase 3) is a genuine escalation in precision: Phase 2 claimed 'no seed loop exists' (false -- it just couldn't see run_gmixup.sh, a .py-only context limitation); Phase 3's tool-calling agent actually read the shell script via whole-repo grep and correctly identified the real, subtler bug (8 seeds shipped vs. 10 claimed) instead of the cruder wrong claim. Also rejected from Phase 2's same run: a metric_misimplementation claim about AUROC for a 'molecular property prediction' experiment the repo never implements at all ('unimplemented' not 'misimplemented', out of scope for our taxonomy, same pattern as the cifar_10_100n false positive in Phase 1)."
+  },
+  "lottery_ticket_hypothesis": {
+    "arxiv_id": "1803.03635",
+    "title": "The Lottery Ticket Hypothesis: Finding Sparse, Trainable Neural Networks",
+    "repo_url": "https://github.com/google-research/lottery-ticket-hypothesis",
+    "repo_commit": "1f17279d282e729ee29e80a2f750cfbffc4b8500",
+    "paper_source": "html",
+    "category": "A",
+    "expected_findings": [
+      {
+        "failure_mode": "hyperparam_drift",
+        "severity": "high",
+        "paper_evidence": "Paper appendix table (Hyperparameter Exploration for Fully-Connected Networks): \"Optimizer Adam 1.2e-3\" for the Lenet architecture. Body text: \"Each network was trained with Adam at a learning rate of 0.0012.\"",
+        "code_evidence": "mnist_fc/constants.py:32",
+        "explanation": "constants.py:32 sets `OPTIMIZER_FN = functools.partial(tf.train.GradientDescentOptimizer, .1)` -- plain SGD at learning rate 0.1, not Adam at 0.0012 as the paper states for this exact architecture/dataset pairing. Both the optimizer class and the learning rate contradict the paper. Also independently reported by a user in GitHub issue #15 (\"The learning rate is different from the paper in iclr 2019\").",
+        "confidence": 0.9
+      },
+      {
+        "failure_mode": "test_set_contamination",
+        "severity": "medium",
+        "paper_evidence": "Paper Appendix C: \"The particular early-stopping criterion we employ throughout this paper is the iteration of minimum validation loss during training.\"",
+        "code_evidence": "datasets/dataset_mnist.py:66-69 (DatasetMnist never passes a validate split), foundations/dataset_base.py:57-70 (validate defaults to None if not passed)",
+        "explanation": "This finding was NOT part of our original hand-annotation -- it was surfaced by the Phase 1 baseline agent itself (independently, at a larger token budget than first attempted) and then verified by us reading the code. DatasetMnist.__init__ (datasets/dataset_mnist.py) calls the DatasetBase constructor with only (x_train,y_train) as train and (x_test,y_test) as test, never supplying a `validate` argument, so self._validate stays None (dataset_base.py:57-70) for the exact MNIST/Lenet configuration the README calls out as reimplementing 'Section 2 of their paper'. The paper's stated early-stopping methodology (iteration of minimum VALIDATION loss) cannot be executed by the shipped code as configured -- no genuine validation split exists to compute it from, only periodic TEST-set logging (test_interval=100 in lottery_experiment.py, no validate_interval set). Kept at MEDIUM confidence/severity rather than HIGH: the repo does not itself wire test-set logging into any training-time decision (it's inert logging, not consumed downstream in the code we have), so this is better described as 'the paper's described methodology is unimplemented, and the closest available substitute is the test set' than a live contamination pathway -- an interpretive judgment call, flagged as such.",
+        "confidence": 0.6
+      }
+    ]
+  },
+  "network_deconvolution": {
+    "arxiv_id": "1905.11926",
+    "title": "Network Deconvolution",
+    "repo_url": "https://github.com/yechengxi/deconvolution",
+    "repo_commit": "d221c221b7d8f338d79ed9a4f97613dbf8afede9",
+    "paper_source": "html",
+    "category": "A",
+    "expected_findings": [
+      {
+        "failure_mode": "hyperparam_drift",
+        "severity": "high",
+        "paper_evidence": "The initial learning rates are 0.01, 0.1 and 0.1 respectively for VGG-11,ResNet-18 and DenseNet-121",
+        "code_evidence": "main_imagenet.py:56, arg_parser.py:39",
+        "explanation": "main_imagenet.py:56 (and arg_parser.py:39 for the CIFAR entry point) both set a single universal --lr default of 0.1 -- there is no per-architecture override anywhere in the repo (verified: grep for 'vgg'/'VGG' near any lr/learning-rate reference returns nothing). This is correct for ResNet-18 and DenseNet-121 (both 0.1 per the paper) but WRONG for VGG-11, which the paper claims needs 0.01. The README's only ImageNet example command (`main_imagenet.py -a resnet18 ...`) never overrides --lr and there is no VGG-11/ImageNet example anywhere, so following the same pattern for VGG-11 would silently use the wrong learning rate. Found by the Phase 3 iter2 tool-calling agent, independently verified against the code and README.",
+        "confidence": 0.9
+      }
+    ],
+    "annotation_note": "REVISED after Phase 3: originally annotated as clean (category B) in Phase 0. That check confirmed the single universal lr=0.1 default matches the paper 'for at least 2 of the 3' ImageNet architectures but didn't flag that this same default is wrong for the third (VGG-11) -- an incomplete cross-check, same class of gap as birt_continual_learning's Phase 2 revision. ReScience C's [Re] 'reproduced' verdict still stands for whatever it actually checked; doesn't contradict this specific per-architecture gap. Reclassified A (has a real issue). No fit_transform/scaler leakage found; seed set via a single --seed flag (main.py:52), consistent with paper's single-run reporting -- those two checks still hold."
+  },
+  "birt_continual_learning": {
+    "arxiv_id": "2305.04769",
+    "title": "BiRT: Bio-inspired Replay in Vision Transformers for Continual Learning",
+    "repo_url": "https://github.com/NeurAI-Lab/BiRT",
+    "repo_commit": "1340a97bff17fc02e228b754bd80e1fd649ff9cd",
+    "paper_source": "html",
+    "category": "A",
+    "expected_findings": [
+      {
+        "failure_mode": "hyperparam_drift",
+        "severity": "high",
+        "paper_evidence": "a weight decay of 1e-6",
+        "code_evidence": "main.py:77",
+        "explanation": "main.py:77 sets `parser.add_argument('--weight-decay', type=float, default=0.05, ...)` -- a default of 0.05, not 1e-6 as the paper explicitly states (a ~50,000x difference). Not caught in our original Phase 0 annotation, which only checked the code's internal self-consistency (README example vs. code default) without cross-referencing the actual paper text. Found by the Phase 2 iter1 agent (extractor pulled the real quote, verifier caught the mismatch), then independently verified by us.",
+        "confidence": 0.9
+      },
+      {
+        "failure_mode": "single_seed_reporting",
+        "severity": "medium",
+        "paper_evidence": "averaged across three random seeds",
+        "code_evidence": "main.py:168 (--seed default=0), README.md:26 (only documented example uses a single fixed --seed 42)",
+        "explanation": "The paper explicitly claims results are averaged across three random seeds, but the only documented reproduction command in the README uses one fixed --seed 42, and no wrapper script or aggregation mechanism exists anywhere in the repo to run and combine three seeds -- the same pattern found independently in lbcs and sample_specific_masks. Also found by the Phase 2 iter1 agent, not our original Phase 0 hand-annotation.",
+        "confidence": 0.75
+      }
+    ],
+    "annotation_note": "REVISED after Phase 2: originally annotated as clean (category B) in Phase 0 -- that annotation was incomplete. We checked the code's internal self-consistency (main.py argparse defaults vs. the README's example invocation) but never cross-referenced those defaults against the paper's actual stated values. The Phase 2 extractor+verifier pipeline caught both real mismatches above; we independently re-verified both against the live arXiv HTML text and the code before accepting them. Reclassified A (has real issues). ReScience C's [Re] 'reproduced' verdict still stands for whatever that report actually checked -- it doesn't contradict this, since general reproducibility and our specific 6-mode taxonomy are different questions (same distinction noted for cifar_10_100n)."
+  },
+  "cifar_10_100n": {
+    "arxiv_id": "2110.12088",
+    "title": "Learning with Noisy Labels Revisited: A Study Using Real-World Human Annotations",
+    "repo_url": "https://github.com/UCSC-REAL/cifar-10-100n",
+    "repo_commit": "49df7d8a69e355470c77c1c2f2424916325a394b",
+    "paper_source": "html",
+    "category": "B",
+    "expected_findings": [],
+    "annotation_note": "MIXED SIGNAL, reported honestly: one ReScience C report ('Learning with Noisy Labels [Re]visited', v11n1 2026) marks this REPRODUCED; a second, newer report (Hudovernik 2026, DOI 10.5281/zenodo.18401497) marks it only PARTIALLY reproduced. We did not resolve which report is more authoritative. Independently, our own code audit found the evaluate() function (main.py:77-82) correctly uses test_loader only; label-noise injection functions (data/utils.py) operate strictly on train_data/train_labels, no test-set contact; seeding is explicit and single-run (main.py:97-99), consistent with the paper's reporting style. Annotated clean w.r.t. our narrow 6-mode taxonomy specifically -- this is a distinct claim from general reproducibility, which the conflicting reports are actually about."
+  },
+  "synthetic_multi_defect": {
+    "arxiv_id": null,
+    "title": "[SYNTHETIC FIXTURE] Not a real paper",
+    "repo_url": "local:data/synthetic/synthetic_multi_defect (constructed by RepoAudit, no external URL)",
+    "repo_commit": "n/a (not a git repo -- constructed directly, no version history)",
+    "paper_source": "html",
+    "category": "A",
+    "synthetic": true,
+    "expected_findings": [
+      {
+        "failure_mode": "test_set_contamination",
+        "severity": "high",
+        "paper_evidence": "data/papers/synthetic_multi_defect.html: \"All hyperparameter selection is performed on a validation split; the test set is touched exactly once, for final reporting.\"",
+        "code_evidence": "data/synthetic/synthetic_multi_defect/train.py:51",
+        "explanation": "train_with_early_stopping() loops over candidate max_iter values and at line 51 scores each candidate model directly on X_test/y_test, keeping whichever configuration scores best on the test set. The test set drives model selection, not just final reporting -- contradicting the paper's claim of a separate validation split.",
+        "confidence": 1.0
+      },
+      {
+        "failure_mode": "metric_misimplementation",
+        "severity": "medium",
+        "paper_evidence": "data/papers/synthetic_multi_defect.html: \"We report the macro-averaged F1 score as our primary metric\"",
+        "code_evidence": "data/synthetic/synthetic_multi_defect/train.py:64",
+        "explanation": "f1_score(y, preds) is called with no `average` argument, so sklearn defaults to average='binary' (scoring only the positive class), not the claimed macro-average across both classes.",
+        "confidence": 1.0
+      },
+      {
+        "failure_mode": "eval_on_train",
+        "severity": "high",
+        "paper_evidence": "data/papers/synthetic_multi_defect.html: \"the test set is touched exactly once, for final reporting\" (implies final reported numbers are test-set numbers).",
+        "code_evidence": "data/synthetic/synthetic_multi_defect/train.py:77",
+        "explanation": "Line 77 is labeled \"Final test set evaluation\" but calls evaluate(model, X_train, y_train) -- the same train split already evaluated on the previous line -- instead of X_test, y_test. Verified by running the script: per-seed \"train_metrics\" and \"test_metrics\" are numerically identical every time.",
+        "confidence": 1.0
+      }
+    ],
+    "annotation_note": "This fixture originally also planted a single_seed_reporting bug (one hardcoded seed vs. a paper claim of 5-seed averaging). That entry was retired and the code fixed to genuinely loop over 5 seeds once real, verified instances of single_seed_reporting were found by hand in two actual ICML 2024 papers below (lbcs, sample_specific_masks) -- keeping a fake bug here after finding real examples would have made this fixture stale, and worse, would have penalized a correct checker as a false positive once ground truth no longer listed it."
+  },
+  "lbcs": {
+    "arxiv_id": "2311.08675",
+    "title": "Refined Coreset Selection: Towards Minimal Coreset Size under Model Performance Constraints",
+    "repo_url": "https://github.com/xiaoboxia/LBCS",
+    "repo_commit": "338a31dc5ae46718e1ec25ad11ba9e27e76071c1",
+    "paper_source": "html",
+    "category": "A",
+    "paper_source_note": "Sourced from PaperBench's (arXiv 2504.01848) official ICML 2024 paper list, not from ReScience/ad-hoc search.",
+    "expected_findings": [
+      {
+        "failure_mode": "single_seed_reporting",
+        "severity": "high",
+        "paper_evidence": "Paper (arXiv 2311.08675), Table 1/2 caption and body text: \"All experiments are repeated 20 times on NVIDIA GTX3090 GPUs with PyTorch. The mean and standard deviation (std.) of results are reported.\"",
+        "code_evidence": "run_cifar.py:191 (np.random.seed(34)), run_svhn.py:163 (np.random.seed(42)), run_fashion.py:166 (np.random.seed(41))",
+        "explanation": "Each of the three entry-point scripts hardcodes a single fixed seed with no --seed CLI argument at all (verified: `grep add_argument run_cifar.py` shows no seed flag) and no wrapper script, loop, or aggregation code anywhere in the repo to run and combine 20 repeats. The README's documented reproduction commands vary only --init/--limit (coreset size), never the seed. The paper's core reported statistic (mean +/- std over 20 runs) cannot be reproduced by the shipped code as-is.",
+        "confidence": 0.9
+      }
+    ]
+  },
+  "sample_specific_masks": {
+    "arxiv_id": "2406.03150",
+    "title": "Sample-specific Masks for Visual Reprogramming",
+    "repo_url": "https://github.com/tmlr-group/SMM",
+    "repo_commit": "eeac33afc4aa98ecd6d7595e5fecaf35959be055",
+    "paper_source": "html",
+    "category": "A",
+    "paper_source_note": "Sourced from PaperBench's (arXiv 2504.01848) official ICML 2024 paper list, not from ReScience/ad-hoc search.",
+    "expected_findings": [
+      {
+        "failure_mode": "single_seed_reporting",
+        "severity": "medium",
+        "paper_evidence": "Paper (arXiv 2406.03150): \"Experiments are run with three seeds on a single A100 GPU and the averaged test accuracy is reported.\"",
+        "code_evidence": "readme.md:53-63 (every documented command uses --seed 0)",
+        "explanation": "--seed IS exposed as a CLI flag (cfg.py:12-16), unlike lbcs, so a user could in principle run it three times by hand -- but every single documented reproduction command in the README fixes --seed 0, and no script anywhere in the repo runs multiple seeds or averages results. Severity kept MEDIUM rather than HIGH because the mechanism to fix this exists in the code (just isn't exercised or documented), unlike lbcs where no seed parameter exists at all.",
+        "confidence": 0.7
+      }
+    ]
+  }
+}

@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head><title>[SYNTHETIC FIXTURE] Not a real paper</title></head>
+<body>
+<h1 class="ltx_title">SYNTHETIC FIXTURE — Not a real paper</h1>
+<p><strong>This document is not a real research paper.</strong> It was written
+by the RepoAudit project itself as a paired "paper excerpt" for the synthetic
+defect fixture at <code>data/repos/synthetic_multi_defect/</code>, used only
+to test whether the audit agent can detect four specific failure modes that
+real-world research (ReScience C reports, GitHub issues, Kapoor &amp;
+Narayanan's leakage taxonomy) did not surface citable public examples for
+within the project's time budget. See
+<code>data/ground_truth.json -&gt; "synthetic_multi_defect"</code> for the
+full annotation, each with <code>"synthetic": true</code>.</p>
+
+<section class="ltx_section">
+<h2>Experimental Setup (claims this code deliberately contradicts)</h2>
+<p>We evaluate a linear classifier on a held-out test split. All hyperparameter
+selection is performed on a validation split; the test set is touched exactly
+once, for final reporting.</p>
+<p>To account for variance from random initialization and train/test shuffling,
+we report classification performance <strong>averaged over 5 random seeds
+(mean &plusmn; standard deviation)</strong>.</p>
+<p>We report the <strong>macro-averaged F1 score</strong> as our primary
+metric, computed on the held-out test set only, after training is complete.</p>
+</section>
+</body>
+</html>
