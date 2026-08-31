@@ -43,6 +43,23 @@ def main() -> int:
                         help="Rescore existing saved predictions against current ground truth. No LLM calls, no cost.")
     args = parser.parse_args()
 
+    try:
+        import langchain_nvidia_ai_endpoints  # noqa: F401
+    except ImportError:
+        venv_python = ROOT / ".venv" / "bin" / "python"
+        print(
+            "ERROR: dependencies not found on this interpreter "
+            f"({sys.executable}).\n"
+            f"This project's dependencies are installed in a virtualenv at "
+            f"{ROOT / '.venv'}, not on your system Python.\n\n"
+            f"Run this script with the venv's interpreter instead:\n"
+            f"    {venv_python} {' '.join(sys.argv)}\n\n"
+            f"If {venv_python} doesn't exist yet, set it up first:\n"
+            f"    python3.11 -m venv .venv && {venv_python} -m pip install -r requirements.txt",
+            file=sys.stderr,
+        )
+        return 1
+
     if args.rescore_only:
         from src.eval import rescore_phase
         for phase in args.phases:
