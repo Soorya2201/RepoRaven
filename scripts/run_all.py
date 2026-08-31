@@ -43,10 +43,6 @@ def main() -> int:
                         help="Rescore existing saved predictions against current ground truth. No LLM calls, no cost.")
     args = parser.parse_args()
 
-    if not (ROOT / ".env").exists():
-        print("ERROR: .env not found. Copy .env.example to .env and fill in NVIDIA_API_KEY.", file=sys.stderr)
-        return 1
-
     if args.rescore_only:
         from src.eval import rescore_phase
         for phase in args.phases:
@@ -54,6 +50,10 @@ def main() -> int:
                 print(f"\n{'=' * 70}\nRescoring {phase} (no LLM calls)\n{'=' * 70}", flush=True)
                 rescore_phase(phase)
         return 0
+
+    if not (ROOT / ".env").exists():
+        print("ERROR: .env not found. Copy .env.example to .env and fill in NVIDIA_API_KEY.", file=sys.stderr)
+        return 1
 
     if not args.skip_fetch:
         if not _run([PYTHON, "scripts/curate_eval_set.py"],
