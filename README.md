@@ -69,6 +69,14 @@ A consensus check plus an explicit human-approval gate for high-severity finding
 
 *Phase 3 and 4's numbers above were corrected after a scoring bug was found and fixed mid-project: `src/eval.py`'s matcher only recognized `.py` file citations, so ground-truth findings living in a `.sh` or `.md` file were structurally unmatchable in every phase, silently, until a correctly-grounded Phase 4 prediction exposed it. Fixed and all four phases rescored from saved predictions — full detail in `changelog.md`. Baseline's own F1 is also not stable run-to-run — a second run scored 0.182 on identical papers/code/prompt (see `outputs/trajectories/README.md`), because Phase 1's single-shot design has no repair mechanism for the transient API errors and formatting bugs documented as its central finding. **What is stable across every run observed: Iterations 1 and 3 are clearly the two strongest configurations, each with different strengths.***
 
+### Simple baseline vs. agent solution, at a glance
+
+| Metric | Simple baseline (Phase 1) | Agent solution (Final ensemble) | Change |
+|---|---|---|---|
+| Primary outcome (F1) | 0.320 | 0.759 | **+0.439** |
+| Human time per task | Reference point, not our own measurement: OpenAI's PaperBench had 8 ML PhDs spend **~48 hours each** attempting full manual replication of one paper (best result 41% completion). We don't check full replication — only 6 specific failure modes — so this isn't apples-to-apples, but it's the honest scale of the manual alternative. | ~7 min of agent compute per paper (iter1 + iter3 combined, the two phases the final ensemble depends on: (1,911 s + 1,847 s) ÷ 9 papers), plus a few minutes of human review of the flagged findings — every finding ships with a paper quote and a code citation specifically so that review is fast. | Manual full replication is hours; targeted review of this tool's output is minutes. Not a fair head-to-head (different scope), stated as an order-of-magnitude reference, not a controlled comparison. |
+| Cost per task | Not applicable — fully manual, no API cost. | ~109,000 tokens/paper on average ((403,417 + 581,545 tokens) ÷ 9 papers, iter1+iter3 combined). Fits NVIDIA NIM's free tier for all 9 papers across all phases. We deliberately do **not** publish a dollar figure — NIM's pricing page did not render for automated fetching during this project, so we could not verify a per-token rate and won't state a number we haven't confirmed (see `REPRODUCTION.md` §5). | Token cost is real and reproducible; dollar cost is knowingly left unstated rather than estimated. |
+
 ### The most instructive result: Phase 3 regressed, Phase 4 recovered differently than expected
 
 Phase 3 gave the agent strictly *more* capability and it got substantially worse. `birt_continual_learning` isolates the cause exactly — Phase 2 caught 2/2 findings; Phase 3 caught 0/2 **despite making 9 successful tool calls**:
