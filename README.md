@@ -34,7 +34,7 @@ That's an unedited excerpt from `outputs/final/FINAL_REPORT.md` — a real bug i
 | Data-leakage detection (F1) | 0.0 | **1.0** |
 | Cost per paper | — | ~109k tokens, ~7 min, on the NVIDIA NIM free tier |
 
-- **Evaluation set:** 9 papers (ICML/ICLR repos, including 2 from PaperBench's official ICML 2024 list), 2 negative controls, and a synthetic fixture with planted bugs. There are 15 hand-verified findings in total.
+- **Evaluation set:** 9 published ML papers (mostly ICML/ICLR, including 2 from PaperBench's official ICML 2024 list), 2 negative controls, and a synthetic fixture with planted bugs. There are 15 hand-verified findings in total.
 - **Architecture:** atomic claim extraction → six specialized, deterministic evidence-gathering checkers → grounded LLM decisions, ensembled with an extractor-verifier pipeline. Built with LangGraph, NVIDIA NIM (Nemotron, gpt-oss-120b) and tree-sitter.
 - **The agent found bugs our own annotation missed**, three times. Each was verified by hand, then every earlier phase was rescored, which made earlier phases look *worse*.
 
