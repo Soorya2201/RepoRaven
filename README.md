@@ -25,6 +25,21 @@ That's an unedited excerpt from `outputs/final/FINAL_REPORT.md` — a real bug i
 
 ---
 
+## Results at a glance
+
+| | Simple baseline | Final system |
+|---|---:|---:|
+| F1 vs. hand-verified ground truth | 0.320 | **0.759** |
+| Precision / recall | 0.400 / 0.267 | 0.786 / 0.733 |
+| Data-leakage detection (F1) | 0.0 | **1.0** |
+| Cost per paper | — | ~109k tokens, ~7 min, on the NVIDIA NIM free tier |
+
+- **Evaluation set:** 9 papers (ICML/ICLR repos, including 2 from PaperBench's official ICML 2024 list), 2 negative controls, and a synthetic fixture with planted bugs. There are 15 hand-verified findings in total.
+- **Architecture:** atomic claim extraction → six specialized, deterministic evidence-gathering checkers → grounded LLM decisions, ensembled with an extractor-verifier pipeline. Built with LangGraph, NVIDIA NIM (Nemotron, gpt-oss-120b) and tree-sitter.
+- **The agent found bugs our own annotation missed**, three times. Each was verified by hand, then every earlier phase was rescored, which made earlier phases look *worse*.
+
+---
+
 ## The user and their bottleneck
 
 **Who has this problem:** journal editors, program-committee chairs, and ML team leads who have to decide whether a paper's reported results can be trusted — before publishing it, citing it, or building a product on top of it.
@@ -67,7 +82,7 @@ RepoRaven runs at **79% precision** — about 1 in 5 findings is a false positiv
 
 **Primary metric: F1** against `data/ground_truth.json` — it's the one number the user actually needs, since a journal editor cares equally about missed real bugs (recall) and wasted-time false alarms (precision), and F1 is the standard way to force both to matter at once. Precision, recall, FPR-on-clean, and the per-failure-mode breakdown are reported alongside it as supporting diagnostics — they explain *why* F1 moved, not what "winning" means. Full detail with per-paper tables in [`changelog.md`](changelog.md) and `phases/phase_*.md`. All figures below are scored against **identical current ground truth** (`src.eval.rescore_phase` replays saved predictions when ground truth changes, so comparisons stay fair).
 
-**Why we stopped after Phase 4 (iteration 3) rather than building a Phase 5:** the original plan included one more iteration — consensus checking across checkers, plus a human-approval gate. After weighing it directly against finishing well, we chose to close out the submission instead: record the video, verify Phase 4's results, and polish what's built, rather than add a fifth iteration on the last day. That human-approval gate is the one piece of unbuilt work we consider a real, still-open gap — see the disclaimer above.
+**Why we stopped after Phase 4 (iteration 3) rather than building a Phase 5:** the original plan included one more iteration — consensus checking across checkers, plus a human-approval gate. After weighing it directly against finishing well, we chose to close out the submission instead: record the video, verify Phase 4's results, and polish what's built, rather than add a fifth iteration on the last day. That human-approval gate is the one piece of unbuilt work we consider a real, still-open gap — see [Findings are triage, not adjudication](#findings-are-triage-not-adjudication).
 
 | Stage | What we tried and why | Evidence | Decision / learning |
 |---|---|---|---|
